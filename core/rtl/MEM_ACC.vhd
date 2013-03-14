@@ -5,7 +5,7 @@
 -- #  data memory interface. Furthermore, internal data   #
 -- #  switching networks are located here.                #
 -- # **************************************************** #
--- #  Last modified: 09.03.2013                           #
+-- #  Last modified: 14.03.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -113,7 +113,6 @@ begin
 		begin
 			-- Memory write data (OP_B) forwarding --
 			if (WB_FWD_I(fwd_en_c) = '1') and (MA_CTRL_BUS_I(ctrl_mcyc_c) = '0') and (MA_CTRL_BUS_I(ctrl_rb_3_c downto ctrl_rb_0_c) = WB_FWD_I(fwd_adr_3_c downto fwd_adr_0_c)) then
---			if (WB_FWD_I(fwd_en_c) = '1') and (MA_CTRL_BUS_I(ctrl_rb_3_c downto ctrl_rb_0_c) = WB_FWD_I(fwd_adr_3_c downto fwd_adr_0_c)) then
 				DATA_BP_INT <= WB_FWD_I(fwd_dat_msb_c downto fwd_dat_lsb_c); -- WB stage
 			else
 				DATA_BP_INT <= DATA_BP_FF;
@@ -159,18 +158,31 @@ begin
 		end process W_MEM_ACC;
 
 		-- R/W Control --
-		MEM_RW_O <= MA_CTRL_BUS_I(ctrl_mem_wr_c);
+		MEM_RW_O <= MA_CTRL_BUS_I(ctrl_mem_wr_c) and MA_CTRL_BUS_I(ctrl_en_c);
 
 
 
 	-- Stage Data Multiplexer ------------------------------------------------------------------------------
 	-- --------------------------------------------------------------------------------------------------------
---		SYS_CP_R_DAT     <= CP_DATA_I    when (MA_CTRL_BUS_I(ctrl_rd_cp_acc_c) = '1') else RD_MSR_I;
---		SYS_CP_ALU_R_DAT <= SYS_CP_R_DAT when (MA_CTRL_BUS_I(ctrl_cp_msr_rd_c) = '1') else ALU_RES_FF;
---		DATA_O           <= DATA_BP_FF   when (MA_CTRL_BUS_I(ctrl_link_c)      = '1') else SYS_CP_ALU_R_DAT;
+		no_mac_mul_units: -- syntheszie no MAC and no MUL unit
+			if (build_mul_c = false) and (build_mac_c = false) generate
+				ALU_MAC_DAT <= ALU_RES_FF;
+			end generate no_mac_mul_units;
+		synhesize_mac_mul_units: -- syntheszie MAC and/or MUL unit
+			if (build_mul_c = true) or (build_mac_c = true) generate
+				ALU_MAC_DAT <= MAC_RES_FF when (MA_CTRL_BUS_I(ctrl_use_mac_c) = '1') else ALU_RES_FF;
+			end generate synhesize_mac_mul_units;
 
-		SYS_CP_R_DAT     <= CP_DATA_I    when (MA_CTRL_BUS_I(ctrl_rd_cp_acc_c) = '1') else RD_MSR_I;
-		ALU_MAC_DAT      <= MAC_RES_FF   when (MA_CTRL_BUS_I(ctrl_use_mac_c)   = '1') else ALU_RES_FF;
+		no_cp_present: -- no coprocessors present
+			if (cp0_present_c = false) and (cp1_present_c = false) generate
+				SYS_CP_R_DAT <= RD_MSR_I;
+			end generate no_cp_present;
+		cp_present: -- at least one coprocessor is present
+			if (cp0_present_c = true) or (cp1_present_c = true) generate
+				SYS_CP_R_DAT <= CP_DATA_I when (MA_CTRL_BUS_I(ctrl_rd_cp_acc_c) = '1') else RD_MSR_I;
+			end generate cp_present;
+
+		-- Multiplexers --
 		SYS_CP_ALU_R_DAT <= SYS_CP_R_DAT when (MA_CTRL_BUS_I(ctrl_cp_msr_rd_c) = '1') else ALU_MAC_DAT;
 		DATA_O           <= DATA_BP_FF   when (MA_CTRL_BUS_I(ctrl_link_c)      = '1') else SYS_CP_ALU_R_DAT;
 

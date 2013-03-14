@@ -57,7 +57,7 @@ entity ATLAS_PROCESSOR is
 				WB_ADR_O        : out std_logic_vector(bus_adr_width_c-1 downto 0); -- address
 				WB_CTI_O        : out std_logic_vector(02 downto 0); -- cycle type
 				WB_SEL_O        : out std_logic_vector(01 downto 0); -- byte select
-				WB_TGC_O        : out std_logic_vector(wb_tag_size_c-1 downto 0); -- cycle tag
+				WB_TGC_O        : out std_logic;                     -- cycle tag
 				WB_DATA_O       : out std_logic_vector(data_width_c-1 downto 0); -- data out
 				WB_DATA_I       : in  std_logic_vector(data_width_c-1 downto 0); -- data in
 				WB_WE_O         : out std_logic;                     -- read/write

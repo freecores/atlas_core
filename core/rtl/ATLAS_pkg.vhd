@@ -4,7 +4,7 @@
 -- #  All architecture configurations, options, signal    #
 -- #  definitions and components are listed here.         #
 -- # **************************************************** #
--- #  Last modified: 11.03.2013                           #
+-- #  Last modified: 14.03.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -49,7 +49,6 @@ package atlas_core_package is
 	constant wb_con_bst_cyc_c  : std_logic_vector(2 downto 0) := "001"; -- constant address burst
 	constant wb_inc_bst_cyc_c  : std_logic_vector(2 downto 0) := "010"; -- incrementing address burst
 	constant wb_end_cyc_cyc_c  : std_logic_vector(2 downto 0) := "111"; -- burst end
-	constant wb_tag_size_c     : natural := 3; -- tag signal size
 
 
   -- Machine Status Register ----------------------------------------------------------------
@@ -585,7 +584,7 @@ package atlas_core_package is
 				WB_ADR_O         : out std_logic_vector(bus_adr_width_c-1 downto 0); -- address
 				WB_CTI_O         : out std_logic_vector(02 downto 0); -- cycle type
 				WB_SEL_O         : out std_logic_vector(01 downto 0); -- byte select
-				WB_TGC_O         : out std_logic_vector(wb_tag_size_c-1 downto 0); -- cycle tag
+				WB_TGC_O         : out std_logic;                     -- cycle tag
 				WB_DATA_O        : out std_logic_vector(data_width_c-1 downto 0); -- data out
 				WB_DATA_I        : in  std_logic_vector(data_width_c-1 downto 0); -- data in
 				WB_WE_O          : out std_logic;                     -- read/write

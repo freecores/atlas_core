@@ -4,7 +4,7 @@
 -- #  Main control system, generating control signals     #
 -- #  for each pipeline stage.                            #
 -- # **************************************************** #
--- #  Last modified: 12.03.2013                           #
+-- #  Last modified: 14.03.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -148,7 +148,7 @@ begin
 		-- Branch / Exception: Disable next 2 cycles
 		-- Mem-load dependency: Insert 1 dummy cycle
 		DIS_IF <= '1' when (MULTI_CYC_REQ_I = '1') else '0';
-		branch_slots:
+		branch_slots: -- highly experimental!!!
 			if (branch_slots_en_c = true) generate
 				DIS_CYCLE <= '1' when (MEM_DEPENDECY = '1') or (START_FF = '0') else '0';
 			end generate branch_slots;

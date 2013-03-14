@@ -2,9 +2,9 @@
 -- #    << ATLAS Project - Arithmetical/Logical Unit >>   #
 -- # **************************************************** #
 -- #  The main data processing is done here. Also the CP  #
--- #  interface emergea from this unit.                   #
+-- #  interface emerges from this unit.                   #
 -- # **************************************************** #
--- #  Last modified: 12.03.2013                           #
+-- #  Last modified: 14.03.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -331,7 +331,7 @@ begin
 		TRANSF_INT <= INV_BIT when (EX_CTRL_BUS_I(ctrl_tf_store_c) = '1') else FLAG_BUS_I(flag_t_c); -- transfer flag
 		FLAG_BUS_O(flag_t_c) <= TRANSF_INT;
 
-		-- T-Flag for mask generation --
+		-- T-Flag for mask generation (yeah, this is some kind of forwarding) --
 		MASK_T_FLAG_O <= TRANSF_INT when (EX_CTRL_BUS_I(ctrl_en_c) = '1') and (EX_CTRL_BUS_I(ctrl_tf_store_c) = '1') else FLAG_BUS_I(flag_t_c);
 
 

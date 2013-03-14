@@ -6,7 +6,7 @@
 -- #  instruction cache. The system is capable of         #
 -- #  generating a true 32-bit wide address for the NoC.  #
 -- # **************************************************** #
--- #  Last modified: 12.03.2013                           #
+-- #  Last modified: 14.03.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -65,7 +65,7 @@ entity BUS_INTERFACE is
 				WB_ADR_O         : out std_logic_vector(bus_adr_width_c-1 downto 0); -- address
 				WB_CTI_O         : out std_logic_vector(02 downto 0); -- cycle type
 				WB_SEL_O         : out std_logic_vector(01 downto 0); -- byte select
-				WB_TGC_O         : out std_logic_vector(wb_tag_size_c-1 downto 0); -- cycle tag
+				WB_TGC_O         : out std_logic; -- cycle tag
 				WB_DATA_O        : out std_logic_vector(data_width_c-1 downto 0); -- data out
 				WB_DATA_I        : in  std_logic_vector(data_width_c-1 downto 0); -- data in
 				WB_WE_O          : out std_logic;                     -- read/write
@@ -279,7 +279,7 @@ begin
 
 			-- Wishbone Bus Static Defaults --
 			WB_CTI_O <= wb_classic_cyc_c;
-			WB_TGC_O <= "00" & SYS_MODE_I; -- cycle tag
+			WB_TGC_O <= SYS_MODE_I; -- cycle tag
 			if (BUS_DIR = UP) and (ARB_STATE /= IDLE) then -- download/upload
 				WB_WE_O <= '1'; -- bus write
 			else

@@ -22,7 +22,8 @@ using namespace std;
  int  warning_cnt = 0;
 
  // function prototypes
- void pre_processor(char *input_file, const char *output_file);
+ void convert_strings(char *input_file, const char *output_file);
+ void pre_processor(const char *input_file, const char *output_file);
  int  conv_shift(char *input_string, int line);
  int  conv_cpreg(char *input_string, int line);
  int  conv_reg(char *input_string, int line);
@@ -35,13 +36,161 @@ using namespace std;
  void assemble(const char *input_file, const char *output_file, const char *bin_output_file);
  int  main(int argc, char *argv[]);
  
+ 
+// *****************************************************************************************************************
+// Convert strings into data intialization
+// *****************************************************************************************************************
+void convert_strings(char *input_file, const char *output_file){
+
+    FILE *input, *output;
+    char line_input[1024];
+    int  i = 0, j = 0, k = 0;
+    char *cut_out;
+    char txt_string[256];
+    char tmp_string[256];
+    char buf_string[256];
+    bool found = false;
+	int  fill_data_cnt = 0;
+	int  line = 1;
+	int  high = 0, low = 0;
+	int  word = 0;
+
+    // open string converter input file
+    input = fopen(input_file, "r");
+    if(input == NULL){
+      printf("STRING_CONVERTER: Input file error!\n");
+      exit(1);
+    }
+
+    // open string converter output file
+    output = fopen(output_file, "w");
+    if(output == NULL){
+      printf("STRING_CONVERTER: Output file error!");
+      exit(1);
+    }
+
+    // get line
+	rewind(input);
+	rewind(output);
+    while(fgets(line_input, 512, input) != NULL){
+
+      // clear working string
+      for(i=0; i<strlen(txt_string); i++)
+        txt_string[i] = '\0';
+      // clear working string
+      for(i=0; i<strlen(tmp_string); i++)
+        tmp_string[i] = '\0';
+
+      // get line entry
+      cut_out = strtok(line_input, "\n");
+      if (cut_out != NULL)
+        sprintf(txt_string, "%s", cut_out);
+
+      // erase comments
+      for(i=0; i<strlen(txt_string); i++){
+        if (txt_string[i] == ';'){
+		  for(j=i; j<strlen(txt_string); i++)
+            txt_string[j] = '\0';
+		  break;
+		}
+      }
+
+      // insert line breaks after labels
+      for(i=0; i<strlen(txt_string); i++){
+		if(txt_string[i] == ':'){
+		  
+		  for(j=0; j<(strlen(txt_string)-i); j++){
+		    tmp_string[j] = txt_string[i+j+1];
+		  }
+		  txt_string[i+1] = '\n';
+		  txt_string[i+2] = '\0';
+		  strcat(txt_string, tmp_string);
+		  strcat(txt_string, "\n\0");
+		  break;
+		}
+      }
+
+	  // convert to higher case
+      for(i=0; i<strlen(txt_string); i++){
+		if((txt_string[i] == 39) or (txt_string[i] == 34)) // stop converting when ' or " has been found
+		  break;
+        if((txt_string[i] > 96) and (txt_string[i] < 123))
+          txt_string[i] = txt_string[i] - 32;
+      }
+	  strcpy(tmp_string, txt_string); // make a copy
+	  strcpy(buf_string, txt_string); // make a copy
+
+	  // find ".string" definiton
+	  found = false;
+	  for(i=0; i<strlen(tmp_string); i++){
+	    if ((tmp_string[i+0] == '.') and (tmp_string[i+1] == 'S') and (tmp_string[i+2] == 'T') and (tmp_string[i+3] == 'R') and
+		    (tmp_string[i+4] == 'I') and (tmp_string[i+5] == 'N') and (tmp_string[i+6] == 'G') and (tmp_string[i+7] == ' ')){
+		  for(j=0; j<strlen(tmp_string); j++)
+		    tmp_string[j] = tmp_string[j+i+7];
+		  
+		  // isolate text part
+		  for(k=0; k<strlen(tmp_string); k++){
+		    if (tmp_string[k] == 34){ // beginning of string text field
+			  for(j=0; j<strlen(tmp_string); j++){
+			    if(tmp_string[j+k+1] == 34) // end of string text field
+				  break;
+				else
+			      tmp_string[j] = tmp_string[j+k+1];
+			  }
+		      tmp_string[j] = '\0'; // terminate string
+			  break;
+			}
+		  }
+		  found = true;
+		  break;
+		}
+	  }
+	  
+	  if (found == true){
+	    // save label
+		for (k=0; k<strlen(txt_string); k++){
+		  if (txt_string[k] == '\n'){
+		    txt_string[k+1] = '\0';
+			fputs(txt_string, output);
+			break;
+		  }
+		}
+		// save integer conversion
+		word = 0;
+		for(k=0; k<strlen(tmp_string); k++){
+		  if (k%2==0){
+		    word = (int)tmp_string[k] << 8;
+          }
+		  else{
+		    word = word | (int)tmp_string[k];
+		    sprintf(txt_string, ".dw #%d\n", word);
+            fputs(txt_string, output);
+	      }
+		}
+		if((word&255) != 0) // last byte is zero?
+		  sprintf(txt_string, ".dw #0\n");
+		else
+		  sprintf(txt_string, ".dw #%d\n", word);
+        fputs(txt_string, output);
+	  }
+	  else{
+        // write default to file
+	    strcat(buf_string, "\n");
+        fputs(buf_string, output);
+	  }
+
+    }
+
+    fclose(output);
+    fclose(input);
+}
 
 
 // *****************************************************************************************************************
 // Formating pre-processor
 // Erase comments and empty lines, convert to higher case, get definitions and insert data initializations
 // *****************************************************************************************************************
-void pre_processor(char *input_file, const char *output_file){
+void pre_processor(const char *input_file, const char *output_file){
 
     FILE *input, *output;
     char line_input[1024];
@@ -76,72 +225,6 @@ void pre_processor(char *input_file, const char *output_file){
 	// clear dw table
 	for(i=0; i<65536; i++)
 	  is_dw[i] = false;
-/*
-	// find strings
-	while(fgets(line_input, 512, input) != NULL){
-	  
-      // get line entry
-      cut_out = strtok(line_input, "\n");
-      if (cut_out != NULL)
-        sprintf(txt_string, "%s", cut_out);
-		  
-	  // convert to higher case
-      for(i=0; i<strlen(txt_string); i++){
-		if(txt_string[i] == '"')
-		  break;
-        if((txt_string[i] > 96) and (txt_string[i] < 123)){
-          txt_string[i] = txt_string[i] - 32;
-		}
-      }
-
-	  found = false;
-	  for(i=0; i<strlen(txt_string); i++){
-	    // string-command?
-	    if ((txt_string[i+0] == '.') and (txt_string[i+1] == 'S') and (txt_string[i+2] == 'T') and (txt_string[i+3] == 'R') and (txt_string[i+4] == 'I') and (txt_string[i+5] == 'N') and (txt_string[i+6] == 'G') and (txt_string[i+7] == ' ')) {
-		    // delete command from working-string
-		    for(j=i+8; txt_string[j] != '\0'; j++)
-		      tmp_string[j-(i+8)] = txt_string[j];
-		    tmp_string[j] = '\0';
-			printf("string found: %s\n", tmp_string);
-		    found = true;
-		    break;
-		  }
-	  }
-
-	  // convert string characters
-	  if (found == true){
-	    for(i=0; i<strlen(tmp_string); i=i){
-	      high = 0;
-          low = 1;
-	      i++;
-          if ((tmp_string[i] != '"') and (tmp_string[i] != '\0'))
-            high = int(tmp_string[i]);
-          else
-            break;
-	      i++;
-          if ((tmp_string[i] != '"') and (tmp_string[i] != '\0'))
-            low = int(tmp_string[i]);
-          else
-            break;
-          //sprintf(txt_string, ".DW #%04x\n", ((high<<8)|low));
-          //fputs(txt_string, output);
-        }
-        if(low != 0){
-          //sprintf(txt_string, ".DW #%04x\n", (high<<8));
-          //fputs(txt_string, output);
-        }
-	  }
-	  else{
-	    //strcat(txt_string, "\n");
-	    //fputs(txt_string, output);
-	  }
-	    strcat(txt_string, "\n");
-	    fputs(txt_string, output);
-	}
-    fclose(output);
-    fclose(input);
-	exit(1);
-*/
 
     // get line
 	rewind(input);
@@ -173,15 +256,10 @@ void pre_processor(char *input_file, const char *output_file){
 
 	  // convert to higher case
       for(i=0; i<strlen(txt_string); i++){
-        if((txt_string[i] > 96) and (txt_string[i] < 123)){
+		if((txt_string[i] == 39) or (txt_string[i] == 34)) // stop converting when ' or " has been found
+		  break;
+        if((txt_string[i] > 96) and (txt_string[i] < 123))
           txt_string[i] = txt_string[i] - 32;
-		}
-      }
-
-      // erase comments
-      for(i=0; i<strlen(txt_string); i++){
-        if (txt_string[i] == ';')
-          txt_string[i] = '\0';
       }
 	  
 	  // insert label?
@@ -273,9 +351,9 @@ void pre_processor(char *input_file, const char *output_file){
 		def_cnt++;
 	  }
 
-mem_reserve_loop:
 
 	  // find memory reserve definitions
+mem_reserve_loop:
 	  found = false;
 	  for(i=0; i<strlen(txt_string); i++){
 	    if(txt_string[i] == '.') {
@@ -323,43 +401,6 @@ mem_reserve_loop:
 		fill_data_cnt--;
 	  }
 
-	  found = false;
-	  for(i=0; i<strlen(txt_string); i++){
-	    // string-command?
-	    if ((txt_string[i+0] == '.') and (txt_string[i+1] == 'S') and (txt_string[i+2] == 'T') and (txt_string[i+3] == 'R') and (txt_string[i+4] == 'I') and (txt_string[i+5] == 'N') and (txt_string[i+6] == 'G') and (txt_string[i+7] == ' ') and (txt_string[i+8] == '"')) {
-		    // delete command from working-string
-		    for(j=i+9; txt_string[j] != '\0'; j++)
-		      tmp_string[j-(i+9)] = txt_string[j];
-		    tmp_string[j-9] = '\0';
-			printf("string found: %s\n", tmp_string);
-		    found = true;
-		    break;
-		  }
-	  }
-
-	  // convert string characters
-	  if (found == true){
-		printf("converting string...\n");
-	    for(i=0; i<strlen(tmp_string); i=i){
-	      high = 0;
-          low = 1;
-	      i++;
-          if ((tmp_string[i] != '"') and (tmp_string[i] != '\0'))
-            high = int(tmp_string[i]);
-          else
-            break;
-	      i++;
-          if ((tmp_string[i] != '"') and (tmp_string[i] != '\0'))
-            low = int(tmp_string[i]);
-          else
-            break;
-          sprintf(txt_string, ".DW #%d\n", ((high>>8)|low));
-        }
-        if(low != 0){
-          sprintf(txt_string, ".DW #%d\n", (high>>8));
-        }
-	  }
-
       if (empty_line == false){
 		strcat(txt_string, "\n");
         fputs(txt_string, output);
@@ -388,21 +429,21 @@ int conv_shift(char *input_string, int line){
 
     int sft = 0;
 
-    if (strcmp(input_string, "SWP") == 0)
+    if (strcmp(input_string, "#SWP") == 0)
       sft = 0;
-    else if (strcmp(input_string, "ASR") == 0)
+    else if (strcmp(input_string, "#ASR") == 0)
       sft = 1;
-    else if (strcmp(input_string, "ROL") == 0)
+    else if (strcmp(input_string, "#ROL") == 0)
       sft = 2;
-    else if (strcmp(input_string, "ROR") == 0)
+    else if (strcmp(input_string, "#ROR") == 0)
       sft = 3;
-    else if (strcmp(input_string, "LSL") == 0)
+    else if (strcmp(input_string, "#LSL") == 0)
       sft = 4;
-    else if (strcmp(input_string, "LSR") == 0)
+    else if (strcmp(input_string, "#LSR") == 0)
       sft = 5;
-    else if (strcmp(input_string, "RLC") == 0)
+    else if (strcmp(input_string, "#RLC") == 0)
       sft = 6;
-    else if (strcmp(input_string, "RRC") == 0)
+    else if (strcmp(input_string, "#RRC") == 0)
       sft = 7;
     else {
       printf("ERROR: Invalid shift <%s>! (line %d)\n", input_string, line);
@@ -634,6 +675,14 @@ int conv_imm(char *input, int max_val, int line){
         input_string[i] = input_string[i+1];  
     }
 
+	// character?
+	if ((input_string[0] == 39)){ // -> '
+	  temp[0] = input_string[1];
+	  temp[1] = '\0';
+	  imm = (int)temp[0];
+	  goto skip_analysis;
+	}
+
 	// any label reference definition?
 	if ((input_string[0] == '[')){
 	  for(i=1; i<strlen(input_string); i++){
@@ -645,8 +694,7 @@ int conv_imm(char *input, int max_val, int line){
 		}
 	  }
 	  imm = ((find_offset(temp, 0)-1)*2);
-	  printf("valid mem ref %d\n", imm);
-	  goto skip_analysis; // valid definition found
+	  goto skip_analysis;
 	}
 
 	// any low immediate definition?
@@ -754,10 +802,10 @@ int conv_imm(char *input, int max_val, int line){
 skip_analysis:
 
 	// message
-	if (extended == true){
-	  printf("WARNING: Loading extended 32-bit immediate. (line %d)\n", line);
-	  warning_cnt++;
-	}
+	//if (extended == true){
+	//  printf("WARNING: Loading extended 32-bit immediate. (line %d)\n", line);
+	//  warning_cnt++;
+	//}
 
 	// out of range?
     if ((imm > max_val) or (imm < 0)){
@@ -931,9 +979,9 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
       else if (strcmp(arg[0], "SBC") == 0)
         opcode = (5<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
       else if ((strcmp(arg[0], "CMP") == 0) or (strcmp(arg[0], "CMPS") == 0))
-        opcode = (6<<10) | (1<<3) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
+        opcode = (6<<10) | (1<<3) | (conv_reg(arg[1], line)<<4) | conv_reg(arg[2], line);
       else if ((strcmp(arg[0], "CPX") == 0) or (strcmp(arg[0], "CPXS") == 0))
-        opcode = (7<<10) | (1<<3) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
+        opcode = (7<<10) | (1<<3) | (conv_reg(arg[1], line)<<4) | conv_reg(arg[2], line);
       else if (strcmp(arg[0], "AND") == 0){
 	    if (conv_reg(arg[2], line) == conv_reg(arg[3], line)) printf("WARNING: Redundant AND will result in STUB instruction! (line &d)\n", line);
         opcode = (8<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
@@ -953,9 +1001,9 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
       else if (strcmp(arg[0], "BIC") == 0)
         opcode = (12<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
       else if ((strcmp(arg[0], "TEQ") == 0) or (strcmp(arg[0], "TEQS") == 0))
-        opcode = (13<<10) | (1<<3) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
+        opcode = (13<<10) | (1<<3) | (conv_reg(arg[1], line)<<4) | conv_reg(arg[2], line);
       else if ((strcmp(arg[0], "TST") == 0) or (strcmp(arg[0], "TSTS") == 0))
-        opcode = (14<<10) | (1<<3) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
+        opcode = (14<<10) | (1<<3) | (conv_reg(arg[1], line)<<4) | conv_reg(arg[2], line);
       else if (strcmp(arg[0], "SFT") == 0)
         opcode = (15<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_shift(arg[3], line);
 	  
@@ -1191,10 +1239,10 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
       else if (strcmp(arg[0], "COMS") == 0) // 1's complement and set flags
         opcode = (11<<10) | (1<<3) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[1], line)<<4) | conv_reg(arg[1], line);
 
-	  // Direct memory initialization
+	  // Direct memory initialization - WORD
 	  // ---------------------------------------------------------------------------------------------------------
       else if (strcmp(arg[0], ".DW") == 0) // dummy operation (no actual system state change)
-	     opcode = conv_imm(arg[1], pow(2,16)-1, line);
+	     opcode = conv_imm(arg[1], (int)(pow(2,16)-1), line);
 
 	  // Unknown Command
 	  // ---------------------------------------------------------------------------------------------------------
@@ -1232,14 +1280,15 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
 // *****************************************************************************************************************
 int main(int argc, char *argv[]){
 
-    printf("\nAtlas Processor - Evaluation Assembler, Version 2013.03.13\n");
+    printf("\nAtlas Project - Evaluation Assembler, Version 2013.03.14\n");
     printf("by Stephan Nolting (stnolting@gmail.com), Hanover, Germany\n\n");
 
 	// pre_processor.asm - intermediate processing file
 	// init.vhd - vhdl memory initialization data block
 	// out.bin - binary program output for bootloader downloading
 
-    pre_processor(argv[1], "pre_processor.asm"); // erase comments & empty lines & get definitions
+	convert_strings(argv[1], "job.xasm"); // convert strings into direct memory inits
+    pre_processor("job.xasm", "pre_processor.asm"); // erase comments & empty lines & get definitions
     get_labels("pre_processor.asm"); // find and list labels
 	assemble("pre_processor.asm", "init.vhd", "out.bin"); // do the magic conversion
 
