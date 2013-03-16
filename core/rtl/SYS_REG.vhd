@@ -6,7 +6,7 @@
 -- #  processing circuits are implemented within this     #
 -- #  unit.                                               #
 -- # **************************************************** #
--- #  Last modified: 12.03.2013                           #
+-- #  Last modified: 16.03.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -19,6 +19,12 @@ library work;
 use work.atlas_core_package.all;
 
 entity SYS_REG is
+-- ################################################################################################################
+-- ##       Boot Address for Reset                                                                               ##
+-- ################################################################################################################
+	generic (
+				BOOT_ADDRESS_G  : std_logic_vector(data_width_c-1 downto 0) := (others => '0') -- boot address
+			);
 	port	(
 -- ###############################################################################################
 -- ##           Global Control                                                                  ##
@@ -140,10 +146,9 @@ begin
 			-- sync update --
 			if rising_edge(CLK_I) then
 				if (RST_I = '1') then
-					SYS_REG_PC                    <= (others => '0'); -- fixed reset vector!
-					SYS_REG_MSR                   <= (others => '0');
-					SYS_REG_MSR(msr_mode_flag_c)  <= system_mode_c; -- we're the king after reset
-					SYS_REG_MSR(msr_usr_cp_ptc_c) <= '1'; -- user coprocessor -> only access in system mode
+					SYS_REG_PC                   <= BOOT_ADDRESS_G; -- boot address
+					SYS_REG_MSR                  <= (others => '0');
+					SYS_REG_MSR(msr_mode_flag_c) <= system_mode_c; -- we're the king after reset
 				elsif (CE_I = '1') then -- clock enable
 
 					-- Exception MSR Access -------------------------------------------------
@@ -219,10 +224,10 @@ begin
 						SYS_REG_PC <= PC_DATA_I;
 
 					-- Automatic PC Update --------------------------------------------------
-					elsif (STOP_PC = '0') then -- update BYTE address
+					elsif (STOP_PC = '0') then -- update instruction address
 						if (word_mode_en_c = false) then -- byte-addressed memory
 							SYS_REG_PC <= Std_Logic_Vector(unsigned(SYS_REG_PC) + 2); -- byte increment
-						else
+						else -- word-addressed memory
 							SYS_REG_PC <= Std_Logic_Vector(unsigned(SYS_REG_PC) + 1); -- word increment
 						end if;
 					end if;
@@ -242,12 +247,14 @@ begin
 
 		-- MSR Data Read-Back Access --
 		MSR_RD_ACC: process(EX_CTRL_BUS_I, SYS_REG_MSR)
+			variable msr_r_mode_v : std_logic_vector(2 downto 0);
 		begin
+			msr_r_mode_v := SYS_REG_MSR(msr_mode_flag_c) & EX_CTRL_BUS_I(ctrl_msr_am_1_c downto ctrl_msr_am_0_c);
 			RD_MSR_O <= (others => '0');
-			case (EX_CTRL_BUS_I(ctrl_msr_am_1_c downto ctrl_msr_am_0_c)) is
-				when "00" => -- full read access
+			case (msr_r_mode_v) is
+				when "100" => -- system mode: full read access
 					RD_MSR_O <= SYS_REG_MSR;
-				when "01" => -- only read all ALU flags
+				when "101" => -- system mode: only read all ALU flags
 					RD_MSR_O(msr_sys_z_flag_c) <= SYS_REG_MSR(msr_sys_z_flag_c);
 					RD_MSR_O(msr_sys_c_flag_c) <= SYS_REG_MSR(msr_sys_c_flag_c);
 					RD_MSR_O(msr_sys_o_flag_c) <= SYS_REG_MSR(msr_sys_o_flag_c);
@@ -258,28 +265,19 @@ begin
 					RD_MSR_O(msr_usr_o_flag_c) <= SYS_REG_MSR(msr_usr_o_flag_c);
 					RD_MSR_O(msr_usr_n_flag_c) <= SYS_REG_MSR(msr_usr_n_flag_c);
 					RD_MSR_O(msr_usr_t_flag_c) <= SYS_REG_MSR(msr_usr_t_flag_c);
-				when "10" => -- only read system ALU flags
+				when "110" => -- system mode: only read system ALU flags
 					RD_MSR_O(msr_sys_z_flag_c) <= SYS_REG_MSR(msr_sys_z_flag_c);
 					RD_MSR_O(msr_sys_c_flag_c) <= SYS_REG_MSR(msr_sys_c_flag_c);
 					RD_MSR_O(msr_sys_o_flag_c) <= SYS_REG_MSR(msr_sys_o_flag_c);
 					RD_MSR_O(msr_sys_n_flag_c) <= SYS_REG_MSR(msr_sys_n_flag_c);
 					RD_MSR_O(msr_sys_t_flag_c) <= SYS_REG_MSR(msr_sys_t_flag_c);
-				when others => -- only read user ALU flags
+				when others => -- system/user mode: only read user ALU flags
 					RD_MSR_O(msr_usr_z_flag_c) <= SYS_REG_MSR(msr_usr_z_flag_c);
 					RD_MSR_O(msr_usr_c_flag_c) <= SYS_REG_MSR(msr_usr_c_flag_c);
 					RD_MSR_O(msr_usr_o_flag_c) <= SYS_REG_MSR(msr_usr_o_flag_c);
 					RD_MSR_O(msr_usr_n_flag_c) <= SYS_REG_MSR(msr_usr_n_flag_c);
 					RD_MSR_O(msr_usr_t_flag_c) <= SYS_REG_MSR(msr_usr_t_flag_c);
 			end case;
-			if (SYS_REG_MSR(msr_mode_flag_c) = system_mode_c) then -- full read access
-				RD_MSR_O <= SYS_REG_MSR;
-			else -- only user ALU flags are visible
-				RD_MSR_O(msr_usr_z_flag_c) <=  SYS_REG_MSR(msr_usr_z_flag_c);
-				RD_MSR_O(msr_usr_c_flag_c) <=  SYS_REG_MSR(msr_usr_c_flag_c);
-				RD_MSR_O(msr_usr_o_flag_c) <=  SYS_REG_MSR(msr_usr_o_flag_c);
-				RD_MSR_O(msr_usr_n_flag_c) <=  SYS_REG_MSR(msr_usr_n_flag_c);
-				RD_MSR_O(msr_usr_t_flag_c) <=  SYS_REG_MSR(msr_usr_t_flag_c);
-			end if;
 		end process MSR_RD_ACC;
 
 		-- Special Flag output --
@@ -330,40 +328,23 @@ begin
 
 			-- condition check --
 			case (EX_CTRL_BUS_I(ctrl_cond_3_c downto ctrl_cond_0_c)) is
-				when cond_eq_c => -- equal
-					valid_v := z_v;
-				when cond_ne_c => -- not equal
-					valid_v := not z_v;
-				when cond_cs_c => -- unsigned higher or same
-					valid_v := c_v;
-				when cond_cc_c => -- unsigned lower
-					valid_v := not c_v;
-				when cond_mi_c => -- negative
-					valid_v := n_v;
-				when cond_pl_c => -- positive or zero
-					valid_v := not n_v;
-				when cond_os_c => -- overflow
-					valid_v := o_v;
-				when cond_oc_c => -- no overflow
-					valid_v := not o_v;
-				when cond_hi_c => -- unisgned higher
-					valid_v := c_v and (not z_v);
-				when cond_ls_c => -- unsigned lower or same
-					valid_v := (not c_v) and z_v;
-				when cond_ge_c => -- greater than or equal
-					valid_v := n_v xnor o_v;
-				when cond_lt_c => -- less than
-					valid_v := n_v xor o_v;
-				when cond_gt_c => -- greater than
-					valid_v := (not z_v) and (n_v xnor o_v);
-				when cond_le_c => -- less than or equal
-					valid_v := z_v or (n_v xor o_v);
-				when cond_ts_c => -- transfer set
-					valid_v := t_v;
-				when cond_al_c => -- always
-					valid_v := '1';
-				when others => -- undefined
-					valid_v := '0';
+				when cond_eq_c => valid_v := z_v;                          -- equal
+				when cond_ne_c => valid_v := not z_v;                      -- not equal
+				when cond_cs_c => valid_v := c_v;                          -- unsigned higher or same
+				when cond_cc_c => valid_v := not c_v;                      -- unsigned lower
+				when cond_mi_c => valid_v := n_v;                          -- negative
+				when cond_pl_c => valid_v := not n_v;                      -- positive or zero
+				when cond_os_c => valid_v := o_v;                          -- overflow
+				when cond_oc_c => valid_v := not o_v;                      -- no overflow
+				when cond_hi_c => valid_v := c_v and (not z_v);            -- unisgned higher
+				when cond_ls_c => valid_v := (not c_v) and z_v;            -- unsigned lower or same
+				when cond_ge_c => valid_v := n_v xnor o_v;                 -- greater than or equal
+				when cond_lt_c => valid_v := n_v xor o_v;                  -- less than
+				when cond_gt_c => valid_v := (not z_v) and (n_v xnor o_v); -- greater than
+				when cond_le_c => valid_v := z_v or (n_v xor o_v);         -- less than or equal
+				when cond_ts_c => valid_v := t_v;                          -- transfer set
+				when cond_al_c => valid_v := '1';                          -- always
+				when others    => valid_v := '0';                          -- undefined
 			end case;
 
 			-- Manual branch? --

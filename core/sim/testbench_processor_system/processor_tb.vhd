@@ -16,7 +16,8 @@ architecture processor_tb_structure of processor_tb is
 	generic (
 				-- Configuration --
 				UC_AREA_BEGIN_G : std_logic_vector(bus_adr_width_c-1 downto 0) := x"FF000000"; -- begin of uncached area
-				UC_AREA_END_G   : std_logic_vector(bus_adr_width_c-1 downto 0) := x"FFFFFFFF"  -- end of uncached area
+				UC_AREA_END_G   : std_logic_vector(bus_adr_width_c-1 downto 0) := x"FFFFFFFF"; -- end of uncached area
+				BOOT_ADDRESS_G  : std_logic_vector(bus_adr_width_c-1 downto 0) := x"00000000"  -- boot address
 			);
 	port	(
 				-- Global Control --
@@ -38,7 +39,7 @@ architecture processor_tb_structure of processor_tb is
 				WB_ADR_O        : out std_logic_vector(bus_adr_width_c-1 downto 0); -- address
 				WB_CTI_O        : out std_logic_vector(02 downto 0); -- cycle type
 				WB_SEL_O        : out std_logic_vector(01 downto 0); -- byte select
-				WB_TGC_O        : out std_logic_vector(wb_tag_size_c-1 downto 0); -- cycle tag
+				WB_TGC_O        : out std_logic;                     -- cycle tag
 				WB_DATA_O       : out std_logic_vector(data_width_c-1 downto 0); -- data out
 				WB_DATA_I       : in  std_logic_vector(data_width_c-1 downto 0); -- data in
 				WB_WE_O         : out std_logic;                     -- read/write
@@ -62,7 +63,7 @@ architecture processor_tb_structure of processor_tb is
 				WB_CLK_I      : in  std_logic; -- memory master clock
 				WB_RST_I      : in  std_logic; -- high active sync reset
 				WB_CTI_I      : in  std_logic_vector(02 downto 0); -- cycle indentifier
-				WB_TGC_I      : in  std_logic_vector(wb_tag_size_c-1 downto 0); -- cycle tag
+				WB_TGC_I      : in  std_logic; -- cycle tag
 				WB_ADR_I      : in  std_logic_vector(31 downto 0); -- adr in
 				WB_DATA_I     : in  std_logic_vector(data_width_c-1 downto 0); -- write data
 				WB_DATA_O     : out std_logic_vector(data_width_c-1 downto 0); -- read data
@@ -84,7 +85,7 @@ architecture processor_tb_structure of processor_tb is
 	signal WB_ADR_O    : std_logic_vector(31 downto 0); -- address
 	signal WB_CTI_O    : std_logic_vector(02 downto 0); -- cycle type
 	signal WB_SEL_O    : std_logic_vector(01 downto 0); -- byte select
-	signal WB_TGC_O    : std_logic_vector(wb_tag_size_c-1 downto 0); -- cycle tag
+	signal WB_TGC_O    : std_logic;                     -- cycle tag
 	signal WB_DATA_O   : std_logic_vector(data_width_c-1 downto 0); -- data out
 	signal WB_DATA_I   : std_logic_vector(data_width_c-1 downto 0); -- data in
 	signal WB_WE_O     : std_logic;                     -- read/write
@@ -97,8 +98,8 @@ begin
 
 	-- Clock/Reset Generator -------------------------------------------------------------------------------
 	-- --------------------------------------------------------------------------------------------------------
-		G_CLK <= not G_CLK after 5 ns;
-		G_RST <= '1', '0' after 25 ns;
+		G_CLK <= not G_CLK after 10 ns;
+		G_RST <= '1', '0' after 35 ns;
 
 
 	-- Stimulus --------------------------------------------------------------------------------------------
@@ -121,7 +122,8 @@ begin
 			generic map (
 						-- Configuration --
 						UC_AREA_BEGIN_G => x"FF000000", -- begin of uncached area
-						UC_AREA_END_G   => x"FFFFFFFF"  -- end of uncached area
+						UC_AREA_END_G   => x"FFFFFFFF", -- end of uncached area
+						BOOT_ADDRESS_G  => x"00000000"  -- boot address
 					)
 			port map (
 						-- Global Control --

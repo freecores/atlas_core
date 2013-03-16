@@ -3,7 +3,7 @@
 -- # **************************************************** #
 -- #  OpCode decoding unit.                               #
 -- # **************************************************** #
--- #  Last modified: 12.03.2013                           #
+-- #  Last modified: 16.03.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -337,12 +337,14 @@ begin
 							CTRL_O(ctrl_ra_3_c downto ctrl_ra_0_c)         <= M_FLAG_I & INSTR_INT(9 downto 7); -- op A = source & destination
 							CTRL_O(ctrl_rb_is_imm_c)                       <= '1'; -- B is an immediate
 							if (INSTR_INT(11) = '0') then -- load and expand low part
-								IMM_O(7 downto 0) <= INSTR_INT(10) & INSTR_INT(6 downto 0);
-								for i in 8 to data_width_c-1 loop -- sign extension
-									IMM_O(i) <= INSTR_INT(10);
-								end loop;
 								CTRL_O(ctrl_clr_la_c) <= '1'; -- set low byte of A to 0
-								CTRL_O(ctrl_clr_ha_c) <= '1'; -- set high byte of A to 0
+								IMM_O(7 downto 0) <= INSTR_INT(10) & INSTR_INT(6 downto 0);
+								if (ldil_sign_ext_c = true) then -- use sign extension
+									for i in 8 to data_width_c-1 loop -- sign extension
+										IMM_O(i) <= INSTR_INT(10);
+									end loop;
+									CTRL_O(ctrl_clr_ha_c) <= '1'; -- set high byte of A to 0
+								end if;
 							else -- load high part
 								IMM_O(15 downto 8) <= INSTR_INT(10) & INSTR_INT(6 downto 0);
 								CTRL_O(ctrl_clr_ha_c) <= '1'; -- set high byte of A to 0

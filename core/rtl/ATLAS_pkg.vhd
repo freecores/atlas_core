@@ -4,7 +4,7 @@
 -- #  All architecture configurations, options, signal    #
 -- #  definitions and components are listed here.         #
 -- # **************************************************** #
--- #  Last modified: 14.03.2013                           #
+-- #  Last modified: 15.03.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -22,9 +22,10 @@ package atlas_core_package is
 	constant cp1_present_c          : boolean := true;  -- coprocessor 1 (sys cp) present?
 	constant build_mul_c            : boolean := true;  -- build a dedicated MUL unit
 	constant build_mac_c            : boolean := false; -- build a dedicated MAC unit
+	constant ldil_sign_ext_c        : boolean := true;  -- use sign extension when loading low byte
 	constant log2_cache_pages_c     : natural := 2;     -- address bits to specify number of cache pages, max 5
 	constant log2_cache_page_size_c : natural := 5;     -- address bits to specify cache page size (in words)
-	constant max_bus_latency_c      : natural := (2**log2_cache_page_size_c)/2; -- max bus cycle latency
+	constant max_bus_latency_c      : natural := (2**log2_cache_page_size_c)/2; -- max wb bus cycle latency
 
 	---- DO NOT CHANGE ANYTHING BELOW UNLESS YOU REALLY KNOW WHAT YOU ARE DOING! ----
 
@@ -37,6 +38,7 @@ package atlas_core_package is
 	constant cache_page_size_c : natural := 2**log2_cache_page_size_c; -- size of cache page in words
 	constant bus_adr_width_c   : natural := 32; -- wishbone bus address width
 	constant link_reg_adr_c    : std_logic_vector(2 downto 0) := "111"; -- link reg for calls
+	constant stack_pnt_adr_c   : std_logic_vector(2 downto 0) := "110"; -- stack pointer
 	constant user_mode_c       : std_logic := '0'; -- user mode indicator
 	constant system_mode_c     : std_logic := '1'; -- system mode indicator
 	constant word_mode_en_c    : boolean := false; -- use word-addressed memory system instead of byte-addressed
@@ -367,6 +369,9 @@ package atlas_core_package is
   -- Component: Machine Status System -------------------------------------------------------
   -- -------------------------------------------------------------------------------------------
   component SYS_REG
+	generic (
+				BOOT_ADDRESS_G  : std_logic_vector(data_width_c-1 downto 0) := (others => '0') -- boot address
+			  );
 	port	(
 				-- Global Control --
 				CLK_I           : in  std_logic; -- global clock line
@@ -508,6 +513,9 @@ package atlas_core_package is
   -- Component: Atlas CPU Core --------------------------------------------------------------
   -- -------------------------------------------------------------------------------------------
   component ATLAS_CORE
+	generic (
+				BOOT_ADDRESS_G  : std_logic_vector(data_width_c-1 downto 0) := (others => '0') -- boot address
+			);
 	port	(
 				-- Global Control --
 				CLK_I           : in  std_logic; -- global clock line
@@ -599,6 +607,9 @@ package atlas_core_package is
   -- Component: Memory Management Unit ------------------------------------------------------
   -- -------------------------------------------------------------------------------------------
   component MMU
+	generic (
+				BOOT_PAGE_G     : std_logic_vector(data_width_c-1 downto 0) := (others => '0') -- boot address
+			);
 	port	(
 				-- Global Control --
 				CLK_I           : in  std_logic; -- global clock line

@@ -17,6 +17,12 @@ library work;
 use work.atlas_core_package.all;
 
 entity ATLAS_CORE is
+-- ################################################################################################################
+-- ##       Boot Address for Reset                                                                               ##
+-- ################################################################################################################
+	generic (
+				BOOT_ADDRESS_G  : std_logic_vector(data_width_c-1 downto 0) := (others => '0') -- boot address
+			);
 	port	(
 -- ###############################################################################################
 -- ##           Global Control                                                                  ##
@@ -188,6 +194,9 @@ begin
 	-- Machine Status System -------------------------------------------------------------------------------
 	-- --------------------------------------------------------------------------------------------------------
 		System_Reg: SYS_REG
+			generic map (
+						BOOT_ADDRESS_G  => BOOT_ADDRESS_G -- boot address for reset
+						)
 			port map (
 						-- Global Control --
 						CLK_I           => G_CLK,          -- global clock line

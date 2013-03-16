@@ -24,7 +24,8 @@ entity ATLAS_PROCESSOR is
 -- ###############################################################################################
 	generic (
 				UC_AREA_BEGIN_G : std_logic_vector(bus_adr_width_c-1 downto 0) := x"FF000000"; -- begin of uncached area
-				UC_AREA_END_G   : std_logic_vector(bus_adr_width_c-1 downto 0) := x"FFFFFFFF"  -- end of uncached area
+				UC_AREA_END_G   : std_logic_vector(bus_adr_width_c-1 downto 0) := x"FFFFFFFF"; -- end of uncached area
+				BOOT_ADDRESS_G  : std_logic_vector(bus_adr_width_c-1 downto 0) := x"00000000"  -- boot address
 			);
 -- ###############################################################################################
 -- ##           Global Control                                                                  ##
@@ -114,6 +115,9 @@ begin
 	-- Atlas CPU -------------------------------------------------------------------------------------------
 	-- --------------------------------------------------------------------------------------------------------
 		processor_core: ATLAS_CORE
+			generic map (
+						BOOT_ADDRESS_G  => BOOT_ADDRESS_G(data_width_c-1 downto 0) -- boot address for reset
+						)
 			port map (
 						-- Global Control --
 						CLK_I           => CLK_I,      -- global clock line
@@ -156,6 +160,9 @@ begin
 	-- System Coprocessor ----------------------------------------------------------------------------------
 	-- --------------------------------------------------------------------------------------------------------
 		memory_management_unit: MMU
+			generic map (
+						BOOT_PAGE_G     => BOOT_ADDRESS_G(31 downto 16) -- boot page
+			            )
 			port map (
 						-- Global Control --
 						CLK_I           => CLK_I,      -- global clock line
