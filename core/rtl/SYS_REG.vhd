@@ -6,7 +6,7 @@
 -- #  processing circuits are implemented within this     #
 -- #  unit.                                               #
 -- # **************************************************** #
--- #  Last modified: 16.03.2013                           #
+-- #  Last modified: 18.03.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -282,7 +282,7 @@ begin
 
 		-- Special Flag output --
 		CP_PTC_O <= SYS_REG_MSR(msr_usr_cp_ptc_c); -- user coprocessor protection
-		MODE_O   <= SYS_REG_MSR(msr_mode_flag_c);
+		MODE_O   <= SYS_REG_MSR(msr_mode_flag_c); -- current operating mode
 
 		-- PC output and delay --
 		PD_DELAY: process(CLK_I)

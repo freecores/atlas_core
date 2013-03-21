@@ -4,7 +4,7 @@
 -- #  The main data processing is done here. Also the CP  #
 -- #  interface emerges from this unit.                   #
 -- # **************************************************** #
--- #  Last modified: 14.03.2013                           #
+-- #  Last modified: 18.03.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -186,7 +186,7 @@ begin
 
 
 
-	-- ALU / Shfter Logic ----------------------------------------------------------------------------------
+	-- ALU / Shifter Logic ---------------------------------------------------------------------------------
 	-- --------------------------------------------------------------------------------------------------------
 		ALU_KERNEL: process(EX_CTRL_BUS_I, OP_A_INT, OP_B_INT, OP_B_FF, FLAG_BUS_I)
 			variable add_a_v, add_b_v : std_logic_vector(data_width_c downto 0);

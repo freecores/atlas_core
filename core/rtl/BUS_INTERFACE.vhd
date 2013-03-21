@@ -6,7 +6,7 @@
 -- #  instruction cache. The system is capable of         #
 -- #  generating a true 32-bit wide address for the NoC.  #
 -- # **************************************************** #
--- #  Last modified: 14.03.2013                           #
+-- #  Last modified: 18.03.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -271,15 +271,15 @@ begin
 			ERROR_O             <= '0';
 
 			-- Wishbone Bus Defaults --
-			WB_ADR_BUF_NXT      <= WB_ADR_BUF;        -- address
-			WB_DO_BUF_NXT       <= WB_DO_BUF;         -- data out
-			WB_STB_BUF_NXT      <= '0';               -- strobe data
-			WB_CYC_BUF_NXT      <= WB_CYC_BUF;        -- valid cycle
-			WB_SEL_O            <= (others => '1');   -- full word transfer quantity
+			WB_ADR_BUF_NXT      <= WB_ADR_BUF;      -- address
+			WB_DO_BUF_NXT       <= WB_DO_BUF;       -- data out
+			WB_STB_BUF_NXT      <= '0';             -- strobe data
+			WB_CYC_BUF_NXT      <= WB_CYC_BUF;      -- valid cycle
+			WB_SEL_O            <= (others => '1'); -- full word transfer quantity
 
 			-- Wishbone Bus Static Defaults --
-			WB_CTI_O <= wb_classic_cyc_c;
-			WB_TGC_O <= SYS_MODE_I; -- cycle tag
+			WB_CTI_O            <= wb_classic_cyc_c;
+			WB_TGC_O            <= SYS_MODE_I;      -- cycle tag
 			if (BUS_DIR = UP) and (ARB_STATE /= IDLE) then -- download/upload
 				WB_WE_O <= '1'; -- bus write
 			else
@@ -287,15 +287,15 @@ begin
 			end if;
 
 			-- Static D-Cache Access --
-			CACHE_D_ADR     <= D_PAGE_SELECT & MEM_ADR_I(log2_cache_page_size_c downto align_lsb_c); -- word address
-			CACHE_EN        <= '0';
-			CACHE_DW_DATA   <= MEM_DAT_I;
-			CACHE_RW        <= MEM_RW_I;
-			MEM_DAT_O       <= CACHE_DR_DATA;
+			CACHE_D_ADR         <= D_PAGE_SELECT & MEM_ADR_I(log2_cache_page_size_c downto align_lsb_c); -- word address
+			CACHE_EN            <= '0';
+			CACHE_DW_DATA       <= MEM_DAT_I;
+			CACHE_RW            <= MEM_RW_I;
+			MEM_DAT_O           <= CACHE_DR_DATA;
 
 			-- Static I-Cache Access --
-			CACHE_I_ADR     <= I_PAGE_SELECT & INSTR_ADR_I(log2_cache_page_size_c downto align_lsb_c); -- word address
-			I_UPDATE        <= '0';
+			CACHE_I_ADR         <= I_PAGE_SELECT & INSTR_ADR_I(log2_cache_page_size_c downto align_lsb_c); -- word address
+			I_UPDATE            <= '0';
 
 			-- State Machine --
 			case (ARB_STATE) is

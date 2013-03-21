@@ -25,6 +25,7 @@ using namespace std;
  void convert_strings(char *input_file, const char *output_file);
  void pre_processor(const char *input_file, const char *output_file);
  int  conv_shift(char *input_string, int line);
+ int  hexc_to_int(char input_char);
  int  conv_cpreg(char *input_string, int line);
  int  conv_reg(char *input_string, int line);
  int  conv_indexing(char *input_string, int line);
@@ -455,6 +456,36 @@ int conv_shift(char *input_string, int line){
 
 
 // *****************************************************************************************************************
+// Convert Hex char to int
+// *****************************************************************************************************************
+int hexc_to_int(char input_char){
+
+    int ret = -1;
+
+	switch(input_char){
+	  case '0': ret = 0; break;
+	  case '1': ret = 1; break;
+	  case '2': ret = 2; break;
+	  case '3': ret = 3; break;
+	  case '4': ret = 4; break;
+	  case '5': ret = 5; break;
+	  case '6': ret = 6; break;
+	  case '7': ret = 7; break;
+	  case '8': ret = 8; break;
+	  case '9': ret = 9; break;
+	  case 'A': ret = 10; break;
+	  case 'B': ret = 11; break;
+	  case 'C': ret = 12; break;
+	  case 'D': ret = 13; break;
+	  case 'E': ret = 14; break;
+	  case 'F': ret = 15; break;
+	}
+    
+    return ret;
+}
+
+
+// *****************************************************************************************************************
 // Convert coprocessor register to int address
 // *****************************************************************************************************************
 int conv_cpreg(char *input_string, int line){
@@ -667,6 +698,32 @@ int conv_imm(char *input, int max_val, int line){
       for(i=0; i<31; i++)
         input_string[i] = input_string[i+1];     
     }
+
+	// binary format?
+	if ((input_string[0] == '0') and (input_string[1] == 'B')){
+      for(i=0; i<31; i++)
+        input_string[i] = input_string[i+2];
+	  imm = 0;
+	  for(i=0; i<8; i++){
+	    if(input_string[i] == '1')
+		  imm = imm + (int)pow(2, (7-i));
+		else if (input_string[i] == '0')
+		  imm = imm;
+		else{
+		  imm = -1; // invalid
+		  break;
+		}
+	  }
+	  goto skip_analysis;
+	}
+
+	// hex format?
+	if ((input_string[0] == '0') and (input_string[1] == 'X')){
+      for(i=0; i<31; i++)
+        input_string[i] = input_string[i+2];
+	  imm = 16*hexc_to_int(input_string[0]) + hexc_to_int(input_string[1]);
+	  goto skip_analysis;
+	}
 
 	// extended immediate? (upper 16 bit of 32-bit label)
     if (input_string[0] == 'X') {
@@ -1293,7 +1350,7 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
 // *****************************************************************************************************************
 int main(int argc, char *argv[]){
 
-    printf("\nAtlas Project - Evaluation Assembler, Version 2013.03.15\n");
+    printf("\nAtlas Project - Evaluation Assembler, Version 2013.03.21\n");
     printf("by Stephan Nolting (stnolting@gmail.com), Hanover, Germany\n\n");
 
 	// pre_processor.asm - intermediate processing file
