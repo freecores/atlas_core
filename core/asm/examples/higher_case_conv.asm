@@ -97,7 +97,7 @@ end:		b end
 
 ; Memory data area
 ; -------------------------------------------------------------------------------------------------
-string_input:  .string "To boldly go, where no man has gone before..."
+string_input:  .stringz "To boldly go, where no man has gone before..."
 string_output: .space #23
 
 .space #32

@@ -125,9 +125,9 @@ void convert_strings(char *input_file, const char *output_file){
 	  found = false;
 	  for(i=0; i<strlen(tmp_string); i++){
 	    if ((tmp_string[i+0] == '.') and (tmp_string[i+1] == 'S') and (tmp_string[i+2] == 'T') and (tmp_string[i+3] == 'R') and
-		    (tmp_string[i+4] == 'I') and (tmp_string[i+5] == 'N') and (tmp_string[i+6] == 'G') and (tmp_string[i+7] == ' ')){
+		    (tmp_string[i+4] == 'I') and (tmp_string[i+5] == 'N') and (tmp_string[i+6] == 'G') and (tmp_string[i+7] == 'Z') and (tmp_string[i+8] == ' ')){
 		  for(j=0; j<strlen(tmp_string); j++)
-		    tmp_string[j] = tmp_string[j+i+7];
+		    tmp_string[j] = tmp_string[j+i+8];
 		  
 		  // isolate text part
 		  for(k=0; k<strlen(tmp_string); k++){
@@ -640,20 +640,38 @@ int find_offset(char *input_label, int line){
 
     int  offset = 0;
 	bool match = false;
+	bool pos = false;
     int  i = 0;
 
-	for(i=0; i<2048; i++){
-      if (strcmp(input_label, c_label_tab[i]) == 0){
-	    offset = i_label_tab[i] - line;
-	    match = true;
-		break;
-      }		
-    }
+	if(input_label[0] == '#'){
+	  for(i=0; i<strlen(input_label); i++)
+        input_label[i] = input_label[i+1]; 
+	  if (input_label[1]== '-')
+	    pos = false;
+	  else
+	    pos = true;
+	  offset = atoi(input_label);
+	  match = true;
+	}
+
+	// search definition
+	else{
+	  for(i=0; i<2048; i++){
+        if (strcmp(input_label, c_label_tab[i]) == 0){
+	      offset = i_label_tab[i] - line;
+	      match = true;
+	  	break;
+        }		
+      }
+	}
+
+	// label definition found?
 	if (match == false){
 	  printf("ERROR: Label <%s> not found! (line %d)\n", input_label, line);
 	  error_cnt++;
 	}
-	
+
+	// out of reach?
 	if ((offset > 255) or (offset < -256)){
 	  printf("ERROR: Label <%s> out of reach (offset: %d)! (line %d)\n", input_label, offset, line);
 	  error_cnt++;
@@ -704,9 +722,9 @@ int conv_imm(char *input, int max_val, int line){
       for(i=0; i<31; i++)
         input_string[i] = input_string[i+2];
 	  imm = 0;
-	  for(i=0; i<8; i++){
+	  for(i=0; i<strlen(input_string); i++){
 	    if(input_string[i] == '1')
-		  imm = imm + (int)pow(2, (7-i));
+		  imm = imm + (int)pow(2, (strlen(input_string)-1-i));
 		else if (input_string[i] == '0')
 		  imm = imm;
 		else{
@@ -1311,7 +1329,7 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
 
 	  // Direct memory initialization - WORD
 	  // ---------------------------------------------------------------------------------------------------------
-      else if (strcmp(arg[0], ".DW") == 0) // dummy operation (no actual system state change)
+      else if (strcmp(arg[0], ".DW") == 0) // memory init
 	     opcode = conv_imm(arg[1], (int)(pow(2,16)-1), line);
 
 	  // Unknown Command
@@ -1350,7 +1368,7 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
 // *****************************************************************************************************************
 int main(int argc, char *argv[]){
 
-    printf("\nAtlas Project - Evaluation Assembler, Version 2013.03.21\n");
+    printf("\nAtlas Project - Evaluation Assembler, Version 2013.03.23\n");
     printf("by Stephan Nolting (stnolting@gmail.com), Hanover, Germany\n\n");
 
 	// pre_processor.asm - intermediate processing file

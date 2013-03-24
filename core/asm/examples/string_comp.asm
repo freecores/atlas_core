@@ -56,5 +56,5 @@ not_equal:	b not_equal
 
 ; Memory data area
 ; -------------------------------------------------------------------------------------------------
-string_1: .string "To boldly go, where no man has gone before..."
-string_2: .string "To boldly go, where no man has gone before..."
+string_1: .stringz "To boldly go, where no man has gone before..."
+string_2: .stringz "To boldly go, where no man has gone before..."

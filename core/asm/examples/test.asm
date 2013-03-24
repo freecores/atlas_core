@@ -101,6 +101,8 @@ main_usr:	ldil cnt, #low[bytes] ; loading a sign extended constant definition ->
 			ldih r5, #high[#2222]
 			swp r5, r4, r5 ; swap memory[r4] with r5
 
+			ldil data, #0xAB ; hex init
+			ldil data, #0b11001100 ; bin init
 			clr data ; clear data transfer register
 
 			staf #1, usr_flags
@@ -132,5 +134,4 @@ test_mem_data_table:
 .dw #14
 .dw some_data ; you can also use definitions here
 .dw [test_mem_data_table] ; here, the absolute address (inside a page) of branch label "test_mem_data_table" will be placed
-
-;.string "To boldly go, where no man has gone before..." ; string test... not working yet
+.stringz "This is a zero-terminated character string"
