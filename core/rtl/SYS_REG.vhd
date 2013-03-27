@@ -6,7 +6,7 @@
 -- #  processing circuits are implemented within this     #
 -- #  unit.                                               #
 -- # **************************************************** #
--- #  Last modified: 18.03.2013                           #
+-- #  Last modified: 26.03.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -39,6 +39,7 @@ entity SYS_REG is
 -- ###############################################################################################
 
 				EX_CTRL_BUS_I   : in  std_logic_vector(ctrl_width_c-1 downto 0); -- ex stage control
+				MA_CTRL_BUS_I   : in  std_logic_vector(ctrl_width_c-1 downto 0); -- ma stage control
 				EXT_INT_REQ0_I  : in  std_logic; -- external interrupt request 0
 				EXT_INT_REQ1_I  : in  std_logic; -- external interrupt request 1
 
@@ -85,6 +86,7 @@ architecture SR_STRUCTURE of SYS_REG is
 	signal XINT_1_TAKEN    : std_logic;
 
 begin
+
 	-- External Interrupt Sychronizer ----------------------------------------------------------------------
 	-- --------------------------------------------------------------------------------------------------------
 		XI_SYNCHRONIZER: process(CLK_I)
@@ -162,7 +164,7 @@ begin
 							case (msr_acc_v) is
 								when "100" => -- system mode: full access
 									SYS_REG_MSR <= MSR_DATA_I;
-								when "101" => -- system mode: only access all ALU flags
+								when "101" => -- system mode: access all ALU flags
 									SYS_REG_MSR(msr_usr_z_flag_c) <= MSR_DATA_I(msr_usr_z_flag_c);
 									SYS_REG_MSR(msr_usr_c_flag_c) <= MSR_DATA_I(msr_usr_c_flag_c);
 									SYS_REG_MSR(msr_usr_o_flag_c) <= MSR_DATA_I(msr_usr_o_flag_c);
@@ -193,23 +195,27 @@ begin
 							if (SYS_REG_MSR(msr_mode_flag_c) = system_mode_c) then -- only in system mode!
 								SYS_REG_MSR(msr_xint_en_c) <= EX_CTRL_BUS_I(ctrl_re_xint_c); -- auto re-enable global x_ints
 							end if;
-						elsif (EX_CTRL_BUS_I(ctrl_fupdate_c) = '1') then -- allow auto update of ALU flags
+						else
 							if (SYS_REG_MSR(msr_mode_flag_c) = user_mode_c) then -- user mode auto alu flag update
-								SYS_REG_MSR(msr_usr_z_flag_c) <= FLAG_BUS_I(flag_z_c);
-								SYS_REG_MSR(msr_usr_c_flag_c) <= FLAG_BUS_I(flag_c_c);
-								SYS_REG_MSR(msr_usr_o_flag_c) <= FLAG_BUS_I(flag_o_c);
-								SYS_REG_MSR(msr_usr_n_flag_c) <= FLAG_BUS_I(flag_n_c);
-							else -- system mode auto alu flag update
-								SYS_REG_MSR(msr_sys_z_flag_c) <= FLAG_BUS_I(flag_z_c);
-								SYS_REG_MSR(msr_sys_c_flag_c) <= FLAG_BUS_I(flag_c_c);
-								SYS_REG_MSR(msr_sys_o_flag_c) <= FLAG_BUS_I(flag_o_c);
-								SYS_REG_MSR(msr_sys_n_flag_c) <= FLAG_BUS_I(flag_n_c);
-							end if;
-						elsif (EX_CTRL_BUS_I(ctrl_tf_store_c) = '1') then -- allow auto update of T-flag
-							if (SYS_REG_MSR(msr_mode_flag_c) = user_mode_c) then -- user mode
-								SYS_REG_MSR(msr_usr_t_flag_c) <= FLAG_BUS_I(flag_t_c);
-							else -- system mode
-								SYS_REG_MSR(msr_sys_t_flag_c) <= FLAG_BUS_I(flag_t_c);
+								if(EX_CTRL_BUS_I(ctrl_fupdate_c) = '1') then -- allow auto update of ALU flags
+									SYS_REG_MSR(msr_usr_z_flag_c) <= FLAG_BUS_I(flag_z_c);
+									SYS_REG_MSR(msr_usr_c_flag_c) <= FLAG_BUS_I(flag_c_c);
+									SYS_REG_MSR(msr_usr_o_flag_c) <= FLAG_BUS_I(flag_o_c);
+									SYS_REG_MSR(msr_usr_n_flag_c) <= FLAG_BUS_I(flag_n_c);
+								end if;
+								if (EX_CTRL_BUS_I(ctrl_tf_store_c) = '1') then -- allow user mode update of T-flag
+									SYS_REG_MSR(msr_usr_t_flag_c) <= FLAG_BUS_I(flag_t_c);
+								end if;
+							else
+								if(EX_CTRL_BUS_I(ctrl_fupdate_c) = '1') then -- allow system mode auto update of ALU flags
+									SYS_REG_MSR(msr_sys_z_flag_c) <= FLAG_BUS_I(flag_z_c);
+									SYS_REG_MSR(msr_sys_c_flag_c) <= FLAG_BUS_I(flag_c_c);
+									SYS_REG_MSR(msr_sys_o_flag_c) <= FLAG_BUS_I(flag_o_c);
+									SYS_REG_MSR(msr_sys_n_flag_c) <= FLAG_BUS_I(flag_n_c);
+								end if;
+								if (EX_CTRL_BUS_I(ctrl_tf_store_c) = '1') then -- allow system mode update of T-flag
+									SYS_REG_MSR(msr_sys_t_flag_c) <= FLAG_BUS_I(flag_t_c);
+								end if;
 							end if;
 						end if;
 					end if;
@@ -220,7 +226,7 @@ begin
 						SYS_REG_PC(2 downto 1) <= INT_VECTOR;
 
 					-- Manual/Branch PC Access ----------------------------------------------
-					elsif (VALID_BRANCH = '1') or ((EX_CTRL_BUS_I(ctrl_en_c) = '1') and (EX_CTRL_BUS_I(ctrl_ctx_down_c) = '1')) then -- valid automatic/manual update / goto user mode
+					elsif (VALID_BRANCH = '1') or ((EX_CTRL_BUS_I(ctrl_en_c) = '1') and (EX_CTRL_BUS_I(ctrl_ctx_down_c) = '1')) then -- valid automatic/manual update/goto user mode
 						SYS_REG_PC <= PC_DATA_I;
 
 					-- Automatic PC Update --------------------------------------------------
@@ -237,19 +243,27 @@ begin
 		end process SR_UPDATE;
 
 
-		-- Mode-Corresponding Flag Output --
+
+	-- MSR Flag Output -------------------------------------------------------------------------------------
+	-- --------------------------------------------------------------------------------------------------------
 		FLAG_BUS_O(flag_z_c) <= SYS_REG_MSR(msr_usr_z_flag_c) when (SYS_REG_MSR(msr_mode_flag_c) = user_mode_c) else SYS_REG_MSR(msr_sys_z_flag_c);
 		FLAG_BUS_O(flag_c_c) <= SYS_REG_MSR(msr_usr_c_flag_c) when (SYS_REG_MSR(msr_mode_flag_c) = user_mode_c) else SYS_REG_MSR(msr_sys_c_flag_c);
 		FLAG_BUS_O(flag_o_c) <= SYS_REG_MSR(msr_usr_o_flag_c) when (SYS_REG_MSR(msr_mode_flag_c) = user_mode_c) else SYS_REG_MSR(msr_sys_o_flag_c);
 		FLAG_BUS_O(flag_n_c) <= SYS_REG_MSR(msr_usr_n_flag_c) when (SYS_REG_MSR(msr_mode_flag_c) = user_mode_c) else SYS_REG_MSR(msr_sys_n_flag_c);
 		FLAG_BUS_O(flag_t_c) <= SYS_REG_MSR(msr_usr_t_flag_c) when (SYS_REG_MSR(msr_mode_flag_c) = user_mode_c) else SYS_REG_MSR(msr_sys_t_flag_c);
 
+		-- Special Flag output --
+		CP_PTC_O <= SYS_REG_MSR(msr_usr_cp_ptc_c); -- user coprocessor protection
+		MODE_O   <= SYS_REG_MSR(msr_mode_flag_c); -- current operating mode
 
-		-- MSR Data Read-Back Access --
-		MSR_RD_ACC: process(EX_CTRL_BUS_I, SYS_REG_MSR)
+
+
+	-- MSR Data-Read Access --------------------------------------------------------------------------------
+	-- --------------------------------------------------------------------------------------------------------
+		MSR_RD_ACC: process(MA_CTRL_BUS_I, SYS_REG_MSR)
 			variable msr_r_mode_v : std_logic_vector(2 downto 0);
 		begin
-			msr_r_mode_v := SYS_REG_MSR(msr_mode_flag_c) & EX_CTRL_BUS_I(ctrl_msr_am_1_c downto ctrl_msr_am_0_c);
+			msr_r_mode_v := SYS_REG_MSR(msr_mode_flag_c) & MA_CTRL_BUS_I(ctrl_msr_am_1_c downto ctrl_msr_am_0_c);
 			RD_MSR_O <= (others => '0');
 			case (msr_r_mode_v) is
 				when "100" => -- system mode: full read access
@@ -280,11 +294,10 @@ begin
 			end case;
 		end process MSR_RD_ACC;
 
-		-- Special Flag output --
-		CP_PTC_O <= SYS_REG_MSR(msr_usr_cp_ptc_c); -- user coprocessor protection
-		MODE_O   <= SYS_REG_MSR(msr_mode_flag_c); -- current operating mode
 
-		-- PC output and delay --
+
+	-- PC Output -------------------------------------------------------------------------------------------
+	-- --------------------------------------------------------------------------------------------------------
 		PD_DELAY: process(CLK_I)
 		begin
 			if rising_edge(CLK_I) then

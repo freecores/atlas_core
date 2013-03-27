@@ -4,7 +4,7 @@
 -- #  All architecture configurations, options, signal    #
 -- #  definitions and components are listed here.         #
 -- # **************************************************** #
--- #  Last modified: 15.03.2013                           #
+-- #  Last modified: 26.03.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -144,52 +144,53 @@ package atlas_core_package is
 	-- Bit Manipulation --
 	constant ctrl_tf_store_c   : natural := 25; -- store bit to t-flag
 	constant ctrl_tf_inv_c     : natural := 26; -- invert bit to be store in t-flag
-	constant ctrl_bit_0_c      : natural := 27; -- bit index bit 0
-	constant ctrl_bit_1_c      : natural := 28; -- bit index bit 1
-	constant ctrl_bit_2_c      : natural := 29; -- bit index bit 2
-	constant ctrl_bit_3_c      : natural := 30; -- bit index bit 3
+	constant ctrl_get_par_c    : natural := 27; -- get parity bit
+	constant ctrl_bit_0_c      : natural := 28; -- bit index bit 0
+	constant ctrl_bit_1_c      : natural := 29; -- bit index bit 1
+	constant ctrl_bit_2_c      : natural := 30; -- bit index bit 2
+	constant ctrl_bit_3_c      : natural := 31; -- bit index bit 3
 
 	-- System Register Access --
-	constant ctrl_msr_wr_c     : natural := 31; -- write to mcr
-	constant ctrl_msr_rd_c     : natural := 32; -- read from mcr
-	constant ctrl_pc_wr_c      : natural := 33; -- write pc
+	constant ctrl_msr_wr_c     : natural := 32; -- write to mcr
+	constant ctrl_msr_rd_c     : natural := 33; -- read from mcr
+	constant ctrl_pc_wr_c      : natural := 34; -- write pc
 
 	-- Branch/Context Control --
-	constant ctrl_cond_0_c     : natural := 34; -- condition code bit 0
-	constant ctrl_cond_1_c     : natural := 35; -- condition code bit 1
-	constant ctrl_cond_2_c     : natural := 36; -- condition code bit 2
-	constant ctrl_cond_3_c     : natural := 37; -- condition code bit 3
-	constant ctrl_branch_c     : natural := 38; -- is branch operation
-	constant ctrl_link_c       : natural := 39; -- store old pc
-	constant ctrl_syscall_c    : natural := 40; -- is a system call
-	constant ctrl_ctx_down_c   : natural := 41; -- go to user mode
+	constant ctrl_cond_0_c     : natural := 35; -- condition code bit 0
+	constant ctrl_cond_1_c     : natural := 36; -- condition code bit 1
+	constant ctrl_cond_2_c     : natural := 37; -- condition code bit 2
+	constant ctrl_cond_3_c     : natural := 38; -- condition code bit 3
+	constant ctrl_branch_c     : natural := 39; -- is branch operation
+	constant ctrl_link_c       : natural := 40; -- store old pc
+	constant ctrl_syscall_c    : natural := 41; -- is a system call
+	constant ctrl_ctx_down_c   : natural := 42; -- go to user mode
 
 	-- Memory Access --
-	constant ctrl_mem_acc_c    : natural := 42; -- request d-mem access
-	constant ctrl_mem_wr_c     : natural := 43; -- write to d-mem
-	constant ctrl_mem_bpba_c   : natural := 44; -- use bypassed base address
-	constant ctrl_mem_daa_c    : natural := 45; -- use delayed address
+	constant ctrl_mem_acc_c    : natural := 43; -- request d-mem access
+	constant ctrl_mem_wr_c     : natural := 44; -- write to d-mem
+	constant ctrl_mem_bpba_c   : natural := 45; -- use bypassed base address
+	constant ctrl_mem_daa_c    : natural := 46; -- use delayed address
 
 	-- Coprocessor Access --
-	constant ctrl_cp_acc_c     : natural := 46; -- coprocessor operation
-	constant ctrl_cp_trans_c   : natural := 47; -- coprocessor data transfer
-	constant ctrl_cp_wr_c      : natural := 48; -- write to coprocessor
-	constant ctrl_cp_id_c      : natural := 49; -- coprocessor id bit
+	constant ctrl_cp_acc_c     : natural := 47; -- coprocessor operation
+	constant ctrl_cp_trans_c   : natural := 48; -- coprocessor data transfer
+	constant ctrl_cp_wr_c      : natural := 49; -- write to coprocessor
+	constant ctrl_cp_id_c      : natural := 50; -- coprocessor id bit
 
 	-- Multiply-and-Acuumulate Unit --
-	constant ctrl_use_mac_c    : natural := 50; -- use MAC unit
-	constant ctrl_load_mac_c   : natural := 51; -- load addition buffer for MAC
-	constant ctrl_use_offs_c   : natural := 52; -- use loaded offset
+	constant ctrl_use_mac_c    : natural := 51; -- use MAC unit
+	constant ctrl_load_mac_c   : natural := 52; -- load addition buffer for MAC
+	constant ctrl_use_offs_c   : natural := 53; -- use loaded offset
 
 --	-- EX Forwarding --
---	constant ctrl_a_ex_ma_fw_c : natural := 53;
---	constant ctrl_a_ex_wb_fw_c : natural := 54;
---	constant ctrl_b_ex_ma_fw_c : natural := 55;
---	constant ctrl_b_ex_wb_fw_c : natural := 56;
---	constant ctrl_c_ex_wb_fw_c : natural := 57;
+--	constant ctrl_a_ex_ma_fw_c : natural := 54;
+--	constant ctrl_a_ex_wb_fw_c : natural := 55;
+--	constant ctrl_b_ex_ma_fw_c : natural := 56;
+--	constant ctrl_b_ex_wb_fw_c : natural := 57;
+--	constant ctrl_c_ex_wb_fw_c : natural := 58;
 
 	-- Bus Size --
-	constant ctrl_width_c      : natural := 53; -- control bus size
+	constant ctrl_width_c      : natural := 54; -- control bus size
 
 	-- Progress Redefinitions --
 	constant ctrl_wb_en_c      : natural := ctrl_rd_wb_c;   -- valid write back
@@ -381,6 +382,7 @@ package atlas_core_package is
 
 				-- Function Control --
 				EX_CTRL_BUS_I   : in  std_logic_vector(ctrl_width_c-1 downto 0); -- ex stage control
+				MA_CTRL_BUS_I   : in  std_logic_vector(ctrl_width_c-1 downto 0); -- ma stage control
 				EXT_INT_REQ0_I  : in  std_logic; -- external interrupt request 0
 				EXT_INT_REQ1_I  : in  std_logic; -- external interrupt request 1
 

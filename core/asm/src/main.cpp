@@ -1227,15 +1227,19 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
 	  
 	  // Bit operations
 	  // ---------------------------------------------------------------------------------------------------------
-      else if (strcmp(arg[0], "SBR") == 0) // set bit
+      else if (strcmp(arg[0], "SBR") == 0) // set select-bit
         opcode = (13<<12) | (0<<11) | (1<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_imm(arg[3], 15, line);
-      else if (strcmp(arg[0], "CBR") == 0) // clear bit
+      else if (strcmp(arg[0], "CBR") == 0) // clear select-bit
         opcode = (13<<12) | (0<<11) | (0<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_imm(arg[3], 15, line);
-      else if (strcmp(arg[0], "STB") == 0) // store bit to t-flag
+      else if (strcmp(arg[0], "STB") == 0) // store select-bit to t-flag
         opcode = (13<<12) | (1<<11) | (1<<10) | (0<<7)                      | (conv_reg(arg[1], line)<<4) | conv_imm(arg[2], 15, line);
-      else if (strcmp(arg[0], "STBI") == 0) // store inverted bit to t-flag
+      else if (strcmp(arg[0], "STBI") == 0) // store inverted select-bit to t-flag
         opcode = (13<<12) | (1<<11) | (1<<10) | (1<<7)                      | (conv_reg(arg[1], line)<<4) | conv_imm(arg[2], 15, line);
-      else if (strcmp(arg[0], "LDB") == 0) // laod bit form t-flag
+      else if (strcmp(arg[0], "SPR") == 0) // store parity-bit to t-flag
+        opcode = (13<<12) | (1<<11) | (1<<10) | (1<<8) | (0<<7)             | (conv_reg(arg[1], line)<<4) | conv_imm(arg[2], 15, line);
+      else if (strcmp(arg[0], "SPRI") == 0) // store inverted parity-bit to t-flag
+        opcode = (13<<12) | (1<<11) | (1<<10) | (1<<8) | (1<<7)             | (conv_reg(arg[1], line)<<4) | conv_imm(arg[2], 15, line);
+      else if (strcmp(arg[0], "LDB") == 0) // laod select-bit form t-flag
         opcode = (13<<12) | (1<<11) | (0<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_imm(arg[3], 15, line);
 	  
 	  // System call
@@ -1262,6 +1266,12 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
 		  opcode = opcode | conv_reg(arg[3], line);
 		if (arg[5][0] == '!') // write back base register
 		  opcode = opcode | (1<<11);
+		else{
+		  if ((conv_indexing(arg[4], line)==1) and (arg[5][0] != '!')){
+		    printf("WARNING: Redundant LDR indexing instruction. (line %d)\n", line);
+	        warning_cnt++;
+		  }
+		}
 	  }
       else if (strcmp(arg[0], "STR") == 0){ // store register
         opcode = (1<<14) | (1<<10) | (conv_reg(arg[1], line)<<7); // mem_access, store, data register
@@ -1275,6 +1285,12 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
 		  opcode = opcode | conv_reg(arg[3], line);
 		if (arg[5][0] == '!') // write back base register
 		  opcode = opcode | (1<<11);
+		else{
+		  if ((conv_indexing(arg[4], line)==1) and (arg[5][0] != '!')){
+		    printf("WARNING: Redundant STR indexing instruction. (line %d)\n", line);
+	        warning_cnt++;
+		  }
+		}
 	  }
 	  else if (strcmp(arg[0], "SWP") == 0){ // data swap: Rd -> MEM[Rb] -> Rd
         opcode = (1<<14) | (conv_reg(arg[1], line)<<7); // mem_access, load_data register
@@ -1368,7 +1384,7 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
 // *****************************************************************************************************************
 int main(int argc, char *argv[]){
 
-    printf("\nAtlas Project - Evaluation Assembler, Version 2013.03.23\n");
+    printf("\nAtlas Project - Evaluation Assembler, Version 2013.03.26\n");
     printf("by Stephan Nolting (stnolting@gmail.com), Hanover, Germany\n\n");
 
 	// pre_processor.asm - intermediate processing file

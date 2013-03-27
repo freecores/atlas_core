@@ -4,7 +4,7 @@
 -- #  This is the top entity of the CPU core.             #
 -- #  All submodules are instantiated here.               #
 -- # **************************************************** #
--- #  Last modified: 09.03.2013                           #
+-- #  Last modified: 27.03.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -205,6 +205,7 @@ begin
 
 						-- Function Control --
 						EX_CTRL_BUS_I   => EX_CTRL,        -- ex stage control
+						MA_CTRL_BUS_I   => MA_CTRL,        -- ma stage control
 						EXT_INT_REQ0_I  => EXT_INT_0_I,    -- external interrupt request 0
 						EXT_INT_REQ1_I  => EXT_INT_1_I,    -- external interrupt request 1
 

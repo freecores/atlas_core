@@ -3,7 +3,7 @@
 -- # **************************************************** #
 -- #  OpCode decoding unit.                               #
 -- # **************************************************** #
--- #  Last modified: 16.03.2013                           #
+-- #  Last modified: 26.03.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -354,17 +354,15 @@ begin
 						when "01" => -- Class 3b: Bit Transfer
 						-- --------------------------------------------------------------------------------
 							CTRL_O(ctrl_rb_is_imm_c) <= '1'; -- B is an immediate
+							IMM_O(to_integer(unsigned(INSTR_INT(3 downto 0)))) <= '1';
 							case (INSTR_INT(11 downto 10)) is
 								when "00" => -- modifiy bit -> clear bit
-									IMM_O(to_integer(unsigned(INSTR_INT(3 downto 0)))) <= '1';
 									CTRL_O(ctrl_alu_fs_2_c downto ctrl_alu_fs_0_c) <= alu_bic_c; -- bit clear
 									CTRL_O(ctrl_rd_wb_c) <= '1'; -- allow write back
 								when "01" => -- modify bit -> set bit
-									IMM_O(to_integer(unsigned(INSTR_INT(3 downto 0)))) <= '1';
 									CTRL_O(ctrl_alu_fs_2_c downto ctrl_alu_fs_0_c) <= alu_orr_c; -- logical or
 									CTRL_O(ctrl_rd_wb_c) <= '1'; -- allow write back
 								when "10" => -- T-flag transfer, load from T
-									IMM_O(to_integer(unsigned(INSTR_INT(3 downto 0)))) <= '1';
 									CTRL_O(ctrl_rd_wb_c) <= '1'; -- allow write back
 									if (T_FLAG_I = '0') then
 										CTRL_O(ctrl_alu_fs_2_c downto ctrl_alu_fs_0_c) <= alu_bic_c; -- bit clear
@@ -372,10 +370,9 @@ begin
 										CTRL_O(ctrl_alu_fs_2_c downto ctrl_alu_fs_0_c) <= alu_orr_c; -- logical or
 									end if;
 								when others => -- T-flag transfer, store to T
-									CTRL_O(ctrl_tf_inv_c) <= INSTR_INT(7); -- invert bit to be transfered to T-flag
-									IMM_O <= (others => '0');
-									CTRL_O(ctrl_alu_fs_2_c downto ctrl_alu_fs_0_c) <= alu_orr_c; -- logical or
 									CTRL_O(ctrl_tf_store_c) <= '1'; -- store to t-flag
+									CTRL_O(ctrl_tf_inv_c)   <= INSTR_INT(7); -- invert bit to be transfered to T-flag
+									CTRL_O(ctrl_get_par_c)  <= INSTR_INT(8); -- get parity bit of OP_A
 							end case;
 
 

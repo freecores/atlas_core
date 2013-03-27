@@ -12,7 +12,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="92" />
+   <WVObjectSize size="93" />
    <wvobject fp_name="divider11" type="divider">
       <obj_property name="label">Global Control</obj_property>
       <obj_property name="DisplayName">label</obj_property>
@@ -71,20 +71,20 @@
       <obj_property name="TextColor">230 230 230</obj_property>
    </wvobject>
    <wvobject fp_name="/processor_tb/the_core_of_the_problem/processor_core/Control_Spine/of_ctrl_bus_o" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">of_ctrl_bus_o[52:0]</obj_property>
-      <obj_property name="ObjectShortName">of_ctrl_bus_o[52:0]</obj_property>
+      <obj_property name="ElementShortName">of_ctrl_bus_o[53:0]</obj_property>
+      <obj_property name="ObjectShortName">of_ctrl_bus_o[53:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/processor_tb/the_core_of_the_problem/processor_core/Control_Spine/ex_ctrl_bus_o" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">ex_ctrl_bus_o[52:0]</obj_property>
-      <obj_property name="ObjectShortName">ex_ctrl_bus_o[52:0]</obj_property>
+      <obj_property name="ElementShortName">ex_ctrl_bus_o[53:0]</obj_property>
+      <obj_property name="ObjectShortName">ex_ctrl_bus_o[53:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/processor_tb/the_core_of_the_problem/processor_core/Control_Spine/ma_ctrl_bus_o" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">ma_ctrl_bus_o[52:0]</obj_property>
-      <obj_property name="ObjectShortName">ma_ctrl_bus_o[52:0]</obj_property>
+      <obj_property name="ElementShortName">ma_ctrl_bus_o[53:0]</obj_property>
+      <obj_property name="ObjectShortName">ma_ctrl_bus_o[53:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/processor_tb/the_core_of_the_problem/processor_core/Control_Spine/wb_ctrl_bus_o" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">wb_ctrl_bus_o[52:0]</obj_property>
-      <obj_property name="ObjectShortName">wb_ctrl_bus_o[52:0]</obj_property>
+      <obj_property name="ElementShortName">wb_ctrl_bus_o[53:0]</obj_property>
+      <obj_property name="ObjectShortName">wb_ctrl_bus_o[53:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/processor_tb/the_core_of_the_problem/processor_core/Control_Spine/of_ctrl_bus_o[0]" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">[0]</obj_property>
@@ -344,6 +344,10 @@
    <wvobject fp_name="/processor_tb/the_core_of_the_problem/processor_core/Executor/sel_bit" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">sel_bit</obj_property>
       <obj_property name="ObjectShortName">sel_bit</obj_property>
+   </wvobject>
+   <wvobject fp_name="/processor_tb/the_core_of_the_problem/processor_core/Executor/parity_bit" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">parity_bit</obj_property>
+      <obj_property name="ObjectShortName">parity_bit</obj_property>
    </wvobject>
    <wvobject fp_name="/processor_tb/the_core_of_the_problem/processor_core/Executor/transf_int" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">transf_int</obj_property>

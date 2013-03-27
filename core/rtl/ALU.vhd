@@ -4,7 +4,7 @@
 -- #  The main data processing is done here. Also the CP  #
 -- #  interface emerges from this unit.                   #
 -- # **************************************************** #
--- #  Last modified: 18.03.2013                           #
+-- #  Last modified: 27.03.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -83,6 +83,8 @@ architecture ALU_STRUCTURE of ALU is
 	signal OP_B_INT    : std_logic_vector(data_width_c-1 downto 0);
 	signal OP_C_INT    : std_logic_vector(data_width_c-1 downto 0);
 	signal ALU_RES_INT : std_logic_vector(data_width_c-1 downto 0);
+	signal T_FLAG_FUNC : std_logic;
+	signal PARITY_BIT  : std_logic;
 	signal TRANSF_INT  : std_logic;
 	signal SEL_BIT     : std_logic;
 	signal INV_BIT     : std_logic;
@@ -274,10 +276,10 @@ begin
 			-- ==============================================
 			mask_data_v := OP_A_INT;
 			if (EX_CTRL_BUS_I(ctrl_clr_ha_c) = '1') then -- clear high half word
-				mask_data_v(15 downto 08) := (others => '0');
+				mask_data_v(data_width_c-1 downto data_width_c/2) := (others => '0');
 			end if;
 			if (EX_CTRL_BUS_I(ctrl_clr_la_c) = '1') then -- clear low half word
-				mask_data_v(07 downto 00) := (others => '0');
+				mask_data_v(data_width_c/2-1 downto 0) := (others => '0');
 			end if;
 
 
@@ -317,22 +319,43 @@ begin
 
 		end process ALU_KERNEL;
 
-		-- Zero detector - Ladies and gentleman, the critical path! --
+
+
+	-- Parity Computation ----------------------------------------------------------------------------------
+	-- --------------------------------------------------------------------------------------------------------
+		PARITY_GEN: process(OP_A_INT)
+			variable par_v : std_logic;
+		begin
+			par_v := '0';
+			for i in 0 to data_width_c-1 loop
+				par_v := par_v xor OP_A_INT(i);
+			end loop;
+			PARITY_BIT <= par_v;
+		end process PARITY_GEN;
+
+
+
+	-- Additional Flag Computation -------------------------------------------------------------------------
+	-- --------------------------------------------------------------------------------------------------------
+
+		-- Zero detector --
+		-- Ladies and gentleman, the critical path!
 		IS_ZERO              <= '1' when (to_integer(unsigned(ALU_RES_INT)) = 0) else '0'; -- zero detector
 		EXTND_ZERO           <= FLAG_BUS_I(flag_z_c) and IS_ZERO; -- extended zero detector
-		FLAG_BUS_O(flag_z_c) <= EXTND_ZERO when (EX_CTRL_BUS_I(ctrl_alu_usez_c) = '1') else IS_ZERO; -- zero flag
+		FLAG_BUS_O(flag_z_c) <= EXTND_ZERO when (EX_CTRL_BUS_I(ctrl_alu_usez_c) = '1') else IS_ZERO; -- (extended) zero flag
 
 		-- Negative flag --
 		FLAG_BUS_O(flag_n_c) <= ALU_RES_INT(data_width_c-1); -- negative flag
 
 		-- T-Flag update --
-		SEL_BIT    <= OP_A_INT(to_integer(unsigned(EX_CTRL_BUS_I(ctrl_bit_3_c downto ctrl_bit_0_c))));
-		INV_BIT    <= (not SEL_BIT) when (EX_CTRL_BUS_I(ctrl_tf_inv_c) = '1') else SEL_BIT; -- invert bit?
-		TRANSF_INT <= INV_BIT when (EX_CTRL_BUS_I(ctrl_tf_store_c) = '1') else FLAG_BUS_I(flag_t_c); -- transfer flag
+		SEL_BIT              <= OP_A_INT(to_integer(unsigned(EX_CTRL_BUS_I(ctrl_bit_3_c downto ctrl_bit_0_c)))); -- selected bit
+		T_FLAG_FUNC          <= PARITY_BIT when (EX_CTRL_BUS_I(ctrl_get_par_c) = '1') else SEL_BIT; -- parity or selected bit
+		INV_BIT              <= (not T_FLAG_FUNC) when (EX_CTRL_BUS_I(ctrl_tf_inv_c) = '1') else T_FLAG_FUNC; -- invert bit?
+		TRANSF_INT           <= INV_BIT when (EX_CTRL_BUS_I(ctrl_tf_store_c) = '1') else FLAG_BUS_I(flag_t_c); -- transfer flag
 		FLAG_BUS_O(flag_t_c) <= TRANSF_INT;
 
 		-- T-Flag for mask generation (yeah, this is some kind of forwarding) --
-		MASK_T_FLAG_O <= TRANSF_INT when (EX_CTRL_BUS_I(ctrl_en_c) = '1') and (EX_CTRL_BUS_I(ctrl_tf_store_c) = '1') else FLAG_BUS_I(flag_t_c);
+		MASK_T_FLAG_O        <= TRANSF_INT when (EX_CTRL_BUS_I(ctrl_en_c) = '1') and (EX_CTRL_BUS_I(ctrl_tf_store_c) = '1') else FLAG_BUS_I(flag_t_c);
 
 
 
