@@ -6,7 +6,7 @@
 -- #  itself and incorporates a configurable shared/      #
 -- #  distributed data/instruction memory/memories.       #
 -- # **************************************************** #
--- #  Last modified: 26.03.2013                           #
+-- #  Last modified: 28.03.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -154,18 +154,16 @@ begin
 					if (MEM_REQ_FF = '1') then -- valid access
 						if (MEM_RW = '1') then -- write data access
 							MEM_FILE_X(to_integer(unsigned(MEM_ADR(LOG2_MEM_SIZE_G downto 1)))) <= MEM_W_DATA;
-						else -- read data access
-							MEM_R_DATA <= MEM_FILE_X(to_integer(unsigned(MEM_ADR(LOG2_MEM_SIZE_G downto 1))));
 						end if;
+						MEM_R_DATA <= MEM_FILE_X(to_integer(unsigned(MEM_ADR(LOG2_MEM_SIZE_G downto 1))));
 					end if;
 				else -- Separated I/D-Memories
 				-- --------------------------------------------------------------
 					if (MEM_REQ_FF = '1') then-- and (HALT_I = '0') then -- valid access
 						if (MEM_RW = '1') then -- write data access
 							MEM_FILE_Y(to_integer(unsigned(MEM_ADR(LOG2_MEM_SIZE_G downto 1)))) <= MEM_W_DATA;
-						else -- read data access
-							MEM_R_DATA <= MEM_FILE_Y(to_integer(unsigned(MEM_ADR(LOG2_MEM_SIZE_G downto 1))));
 						end if;
+						MEM_R_DATA <= MEM_FILE_Y(to_integer(unsigned(MEM_ADR(LOG2_MEM_SIZE_G downto 1))));
 					end if;
 				end if;
 				-- Instruction access

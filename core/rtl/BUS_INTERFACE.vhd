@@ -6,7 +6,7 @@
 -- #  instruction cache. The system is capable of         #
 -- #  generating a true 32-bit wide address for the NoC.  #
 -- # **************************************************** #
--- #  Last modified: 18.03.2013                           #
+-- #  Last modified: 28.03.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -644,9 +644,8 @@ begin
 				if (CACHE_EN = '1') then -- valid data access
 					if (CACHE_RW = '1') then -- cache data write access
 						CACHE_MEM(to_integer(unsigned(CACHE_D_ADR(log2_cache_pages_c+log2_cache_page_size_c-1 downto 0)))) <= CACHE_DW_DATA; -- word address!
-					else -- cache data read access
-						CACHE_DR_DATA <= CACHE_MEM(to_integer(unsigned(CACHE_D_ADR(log2_cache_pages_c+log2_cache_page_size_c-1 downto 0)))); -- word address!
 					end if;
+					CACHE_DR_DATA <= CACHE_MEM(to_integer(unsigned(CACHE_D_ADR(log2_cache_pages_c+log2_cache_page_size_c-1 downto 0)))); -- word address!
 				end if;
 				if (I_UPDATE = '1') then -- cache instruction read access
 					INSTR_DAT_O <= CACHE_MEM(to_integer(unsigned(CACHE_I_ADR(log2_cache_pages_c+log2_cache_page_size_c-1 downto 0)))); -- word address!
