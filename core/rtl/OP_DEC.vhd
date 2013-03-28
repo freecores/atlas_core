@@ -3,7 +3,7 @@
 -- # **************************************************** #
 -- #  OpCode decoding unit.                               #
 -- # **************************************************** #
--- #  Last modified: 26.03.2013                           #
+-- #  Last modified: 28.03.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -115,7 +115,7 @@ begin
 							--CTRL_O(ctrl_msr_am_0_c) <= INSTR_INT(5); -- not needed, redundant assignment!
 							if (INSTR_INT(3) = '0') then -- load from MSR
 								if (INSTR_INT(6 downto 5) /= "11") and (M_FLAG_I = user_mode_c) then
-									CTRL_O(ctrl_syscall_c) <= '1'; -- is system call
+									CTRL_O(ctrl_syscall_c) <= '1'; -- access violation
 								end if;
 								CTRL_O(ctrl_msr_rd_c) <= '1'; -- read msr
 								CTRL_O(ctrl_rd_wb_c)  <= '1'; -- re-enable write back
@@ -128,19 +128,16 @@ begin
 							CTRL_O(ctrl_rd_wb_c)    <= '0'; -- disable write back
 							--CTRL_O(ctrl_msr_am_1_c) <= INSTR_INT(6); -- not needed, redundant assignment!
 							--CTRL_O(ctrl_msr_am_0_c) <= INSTR_INT(5); -- not needed, redundant assignment!
-							if (INSTR_INT(5) = '1') then -- write system ALU flags
-								IMM_O(msr_sys_z_flag_c) <= INSTR_INT(0);
-								IMM_O(msr_sys_c_flag_c) <= INSTR_INT(1);
-								IMM_O(msr_sys_o_flag_c) <= INSTR_INT(2);
-								IMM_O(msr_sys_n_flag_c) <= INSTR_INT(7);
-								IMM_O(msr_sys_t_flag_c) <= INSTR_INT(8);
-							else -- write user ALU flags
-								IMM_O(msr_usr_z_flag_c) <= INSTR_INT(0);
-								IMM_O(msr_usr_c_flag_c) <= INSTR_INT(1);
-								IMM_O(msr_usr_o_flag_c) <= INSTR_INT(2);
-								IMM_O(msr_usr_n_flag_c) <= INSTR_INT(7);
-								IMM_O(msr_usr_t_flag_c) <= INSTR_INT(8);
-							end if;
+							IMM_O(msr_sys_z_flag_c) <= INSTR_INT(0);
+							IMM_O(msr_usr_z_flag_c) <= INSTR_INT(0);
+							IMM_O(msr_sys_c_flag_c) <= INSTR_INT(1);
+							IMM_O(msr_usr_c_flag_c) <= INSTR_INT(1);
+							IMM_O(msr_sys_o_flag_c) <= INSTR_INT(2);
+							IMM_O(msr_usr_o_flag_c) <= INSTR_INT(2);
+							IMM_O(msr_sys_n_flag_c) <= INSTR_INT(7);
+							IMM_O(msr_usr_n_flag_c) <= INSTR_INT(7);
+							IMM_O(msr_sys_t_flag_c) <= INSTR_INT(8);
+							IMM_O(msr_usr_t_flag_c) <= INSTR_INT(8);
 							if (INSTR_INT(3) = '0') then -- store to MSR
 								if ((M_FLAG_I = user_mode_c)   and (INSTR_INT(6 downto 5) /= "11")) or
 								   ((M_FLAG_I = system_mode_c) and (INSTR_INT(6) = '1') and (INSTR_INT(4) = '1')) then

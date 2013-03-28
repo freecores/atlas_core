@@ -33,7 +33,6 @@ entity ATLAS_MICRO is
 	port	(
 				CLK_I           : in  std_logic; -- global clock line
 				RST_I           : in  std_logic; -- global reset line, sync, high-active
-				HALT_I          : in  std_logic; -- halt processor when high
 				SYS_MODE_O      : out std_logic; -- current processor operating mode
 
 -- ###############################################################################################
@@ -107,7 +106,7 @@ begin
 						-- Global Control --
 						CLK_I           => CLK_I,       -- global clock line
 						RST_I           => RST_I,       -- global reset line, sync, high-active
-						HOLD_I          => HALT_I,      -- stops core when high
+						HOLD_I          => '0',         -- stops core when high - do not use here!
 
 						-- Instruction Interface --
 						INSTR_ADR_O     => INSTR_ADR,   -- instruction byte adr
@@ -139,26 +138,17 @@ begin
 
 
 
-	-- Access Request Buffer -------------------------------------------------------------------------------
-	-- --------------------------------------------------------------------------------------------------------
-		ACC_BUFFER: process(CLK_I)
-		begin
-			if rising_edge(CLK_I) then
-				if (RST_I = '1') then
-					MEM_REQ_FF <= '0';
-				elsif (HALT_I = '0') then
-					MEM_REQ_FF <= MEM_REQ;
-				end if;
-			end if;
-		end process ACC_BUFFER;
-
-
-
 	-- Internal Memory -------------------------------------------------------------------------------------
 	-- --------------------------------------------------------------------------------------------------------
 		INT_MEMORY: process(CLK_I)
 		begin
 			if rising_edge(CLK_I) then
+				if (RST_I = '1') then -- Access request buffer
+					MEM_REQ_FF <= '0';
+				else
+					MEM_REQ_FF <= MEM_REQ;
+				end if;
+
 				if (SHARED_MEM_G = TRUE) then -- Shared I/D-Memory
 				-- --------------------------------------------------------------
 					if (MEM_REQ_FF = '1') then -- valid access
@@ -170,7 +160,7 @@ begin
 					end if;
 				else -- Separated I/D-Memories
 				-- --------------------------------------------------------------
-					if (MEM_REQ_FF = '1') then -- valid access
+					if (MEM_REQ_FF = '1') then-- and (HALT_I = '0') then -- valid access
 						if (MEM_RW = '1') then -- write data access
 							MEM_FILE_Y(to_integer(unsigned(MEM_ADR(LOG2_MEM_SIZE_G downto 1)))) <= MEM_W_DATA;
 						else -- read data access

@@ -111,17 +111,17 @@ begin
 			variable xint1_valid_v : std_logic;
 		begin
 			-- external interrupt enable --
-			-- => external int is possible AND int source is masked AND global ints are enabled
+			-- => external int is possible AND int source is enabled AND global ints are enabled
 			xint0_valid_v := EXC_POS_I and SYS_REG_MSR(msr_xint0_en_c) and SYS_REG_MSR(msr_xint_en_c);
 			xint1_valid_v := EXC_POS_I and SYS_REG_MSR(msr_xint1_en_c) and SYS_REG_MSR(msr_xint_en_c);
 
 			-- exception priority list and encoding --
 			if ((xint0_valid_v = '1') and (XINT_SYNC(0) = '1')) then -- external interrupt 0
 				INT_REQ    <= '1';
-				INT_VECTOR <= "01"; -- ext int 1 vector
+				INT_VECTOR <= "01"; -- ext int 0 vector
 			elsif ((xint1_valid_v = '1') and (XINT_SYNC(1) = '1')) then -- external interrupt 1
 				INT_REQ    <= '1';
-				INT_VECTOR <= "10"; -- ext int 0 vector
+				INT_VECTOR <= "10"; -- ext int 1 vector
 			elsif ((EXC_POS_I = '1') and (EX_CTRL_BUS_I(ctrl_syscall_c) = '1')) then
 			-- software interrupt: system call // msr/coprocessor access violation // undefined instruction
 				INT_REQ    <= '1';
@@ -140,10 +140,10 @@ begin
 	-- System Register Update ------------------------------------------------------------------------------
 	-- --------------------------------------------------------------------------------------------------------
 		SR_UPDATE: process(CLK_I, SYS_REG_MSR, EX_CTRL_BUS_I)
-			variable msr_acc_v : std_logic_vector(2 downto 0);
+			variable m_msr_acc_v : std_logic_vector(2 downto 0);
 		begin
 			-- manual msr access mode --
-			msr_acc_v := SYS_REG_MSR(msr_mode_flag_c) & EX_CTRL_BUS_I(ctrl_msr_am_1_c downto ctrl_msr_am_0_c);
+			m_msr_acc_v := SYS_REG_MSR(msr_mode_flag_c) & EX_CTRL_BUS_I(ctrl_msr_am_1_c downto ctrl_msr_am_0_c);
 
 			-- sync update --
 			if rising_edge(CLK_I) then
@@ -161,7 +161,7 @@ begin
 					-- Manual MSR Access ----------------------------------------------------
 					elsif (EX_CTRL_BUS_I(ctrl_en_c) = '1') then -- valid operation
 						if (EX_CTRL_BUS_I(ctrl_msr_wr_c) = '1') then -- write operation
-							case (msr_acc_v) is
+							case (m_msr_acc_v) is
 								when "100" => -- system mode: full access
 									SYS_REG_MSR <= MSR_DATA_I;
 								when "101" => -- system mode: access all ALU flags
@@ -195,7 +195,7 @@ begin
 							if (SYS_REG_MSR(msr_mode_flag_c) = system_mode_c) then -- only in system mode!
 								SYS_REG_MSR(msr_xint_en_c) <= EX_CTRL_BUS_I(ctrl_re_xint_c); -- auto re-enable global x_ints
 							end if;
-						else
+						else -- auto-update
 							if (SYS_REG_MSR(msr_mode_flag_c) = user_mode_c) then -- user mode auto alu flag update
 								if(EX_CTRL_BUS_I(ctrl_fupdate_c) = '1') then -- allow auto update of ALU flags
 									SYS_REG_MSR(msr_usr_z_flag_c) <= FLAG_BUS_I(flag_z_c);
@@ -206,7 +206,7 @@ begin
 								if (EX_CTRL_BUS_I(ctrl_tf_store_c) = '1') then -- allow user mode update of T-flag
 									SYS_REG_MSR(msr_usr_t_flag_c) <= FLAG_BUS_I(flag_t_c);
 								end if;
-							else
+							else -- system mode auto alu flag update
 								if(EX_CTRL_BUS_I(ctrl_fupdate_c) = '1') then -- allow system mode auto update of ALU flags
 									SYS_REG_MSR(msr_sys_z_flag_c) <= FLAG_BUS_I(flag_z_c);
 									SYS_REG_MSR(msr_sys_c_flag_c) <= FLAG_BUS_I(flag_c_c);
@@ -298,7 +298,7 @@ begin
 
 	-- PC Output -------------------------------------------------------------------------------------------
 	-- --------------------------------------------------------------------------------------------------------
-		PD_DELAY: process(CLK_I)
+		PC_DELAY: process(CLK_I)
 		begin
 			if rising_edge(CLK_I) then
 				if (RST_I = '1') then
@@ -307,11 +307,11 @@ begin
 					PC_1D <= SYS_REG_PC;
 				end if;
 			end if;
-		end process PD_DELAY;
+		end process PC_DELAY;
 
 		-- PC outputs --
 		PC_O    <= SYS_REG_PC; -- direct output
-		PC_1D_O <= PC_1D; -- 1x delayed
+		PC_1D_O <= PC_1D;      -- 1x delayed
 
 
 
