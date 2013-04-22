@@ -25,13 +25,13 @@ swi_vec:		b swi_vec ; not used
 main:		ldil r0, #0b11000110 ; load low value using binary format
 			ldih r0, #0b00000101 ; load high value using binary format
 
+			ldil r1, #16 ; if register is zero -> 16 leading zeros
+
 			teq r0, r0
-			bne start ; only start counting when register is not zero
+			beq end ; skip counting when register is not zero
 
-			ldil r1, #16 ; register is zero, so 16 leading zeros
-			b end
 
-start:		clr  r1 ; reset counter
+			clr  r1 ; reset counter
 loop:		sfts r0, r0, #lsl ; shift msb of r0 into carry flag
 			bcs  end ; terminate when shifted bit is one
 			inc  r1, r1, #1 ; increment counter

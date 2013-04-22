@@ -168,7 +168,7 @@ begin
 			if (build_mul_c = false) and (build_mac_c = false) generate
 				ALU_MAC_DAT <= ALU_RES_FF;
 			end generate no_mac_mul_units;
-		synhesize_mac_mul_units: -- syntheszie MAC and/or MUL unit
+		synhesize_mac_mul_units: -- synthesize MAC and/or MUL unit
 			if (build_mul_c = true) or (build_mac_c = true) generate
 				ALU_MAC_DAT <= MAC_RES_FF when (MA_CTRL_BUS_I(ctrl_use_mac_c) = '1') else ALU_RES_FF;
 			end generate synhesize_mac_mul_units;

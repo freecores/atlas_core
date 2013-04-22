@@ -6,7 +6,7 @@
 -- #  itself and incorporates a configurable shared/      #
 -- #  distributed data/instruction memory/memories.       #
 -- # **************************************************** #
--- #  Last modified: 28.03.2013                           #
+-- #  Last modified: 01.04.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -23,7 +23,7 @@ entity ATLAS_MICRO is
 -- ##           Configuration                                                                   ##
 -- ###############################################################################################
 	generic	(
-				LOG2_MEM_SIZE_G : natural := 9;   -- memory address width (mem size)
+				MEM_SIZE_G      : natural := 1024; -- memory size in bytes
 				SHARED_MEM_G    : boolean := TRUE; -- shared/distributed data/instruction memories
 				BOOT_ADDRESS_G  : std_logic_vector(data_width_c-1 downto 0) := x"0000"  -- boot address
 			);
@@ -58,6 +58,9 @@ end ATLAS_MICRO;
 
 architecture ATLAS_MICROCONTROLLER of ATLAS_MICRO is
 
+	-- Internal Constants --
+	constant LOG2_MEM_SIZE_G : natural := log2(MEM_SIZE_G/2); -- size of mem address bus
+
 	-- Instruction Interface --
 	signal INSTR_ADR   : std_logic_vector(data_width_c-1 downto 0); -- instruction address
 	signal INSTR_DATA  : std_logic_vector(data_width_c-1 downto 0); -- opcode
@@ -72,11 +75,11 @@ architecture ATLAS_MICROCONTROLLER of ATLAS_MICRO is
 	signal MEM_W_DATA  : std_logic_vector(data_width_c-1 downto 0); -- write data
 
 	-- Memory Type --
-	type MEM_FILE_T is array (0 to (2**LOG2_MEM_SIZE_G)-1) of std_logic_vector(data_width_c-1 downto 0);
+	type MEM_FILE_T is array (0 to ((MEM_SIZE_G/2)-1)) of std_logic_vector(data_width_c-1 downto 0);
 
 	-- INIT MEMORY IMAGE X --
 	-- Shared memory: Use this memory image for initializing the DATA and INSTRUCTION memory
-	-- Separated memories: Use this memory image for initializing the INSTRUCTION memory
+	-- Separated memories: Use this memory image for initializing the INSTRUCTION memory only
 	-----------------------------------------------------------------------------------------
 	signal MEM_FILE_X : MEM_FILE_T :=
 	(

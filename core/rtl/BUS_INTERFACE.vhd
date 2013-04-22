@@ -6,7 +6,7 @@
 -- #  instruction cache. The system is capable of         #
 -- #  generating a true 32-bit wide address for the NoC.  #
 -- # **************************************************** #
--- #  Last modified: 28.03.2013                           #
+-- #  Last modified: 03.04.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -114,6 +114,7 @@ architecture BUS_INTERFACE_STRUCTURE of BUS_INTERFACE is
 	signal CACHE_I_MISS, CACHE_D_MISS   : std_logic; -- miss during instruction/data access    -- I/D miss access
 	signal VALID_FLAG,   VALID_FLAG_NXT : std_logic_vector(cache_pages_c-1 downto 0);          -- page valid flag
 	signal DIRTY_FLAG,   DIRTY_FLAG_NXT : std_logic_vector(cache_pages_c-1 downto 0);          -- page dirty flag
+	signal CACHE_SYNC                   : std_logic;                                           -- cache is sync
 
 	-- Page Selector --
 	type   page_base_type is array(0 to cache_pages_c-1) of std_logic_vector(bus_adr_width_c-1 downto log2_cache_page_size_c+align_lsb_c);
@@ -123,7 +124,6 @@ architecture BUS_INTERFACE_STRUCTURE of BUS_INTERFACE is
 	signal I_PAGE_BUF, I_PAGE_BUF_NXT   : std_logic_vector(log2_cache_pages_c-1 downto 0);     -- last accessed i-page
 	signal D_PAGE_BUF, D_PAGE_BUF_NXT   : std_logic_vector(log2_cache_pages_c-1 downto 0);     -- last accessed d-page
 	signal NEW_ENTRY_PAGE               : std_logic_vector(log2_cache_pages_c-1 downto 0);     -- new cache enty address
-	signal CACHE_SYNC                   : std_logic;                                           -- cache is sync
 
 	-- Wishbone Bus --
 	signal WB_ADR_BUF, WB_ADR_BUF_NXT   : std_logic_vector(bus_adr_width_c-1 downto 0);        -- bus address

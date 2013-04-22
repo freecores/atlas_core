@@ -80,7 +80,7 @@ init:		ldil r0, #xlow[main_usr]  ; get extended (upper 16-bit of 32-bit) low add
 			sbr  r1, r1, msr_xint0_en ; enable external interrupt 0 mask, no '#'-prefix when using a constant definition!
 			stsr r1
 
-			gtxi r0 ; enable external interrupts and resume operation in user mode at [r0]
+			gtui r0 ; enable external interrupts and resume operation in user mode at [r0]
 
 .space #4 ; just some space (4*x"0000") to isolate user program...
 

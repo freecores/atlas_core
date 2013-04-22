@@ -1124,21 +1124,29 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
         opcode = (12<<10) | (1<<3) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
  
 	  else if ((strcmp(arg[0], "STPC") == 0)    or (strcmp(arg[0], "GT") == 0)    or (strcmp(arg[0], "RET") == 0)) // goto [register]
-        opcode = (13<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[1], line)<<4);
+        opcode = (13<<10)  | (conv_reg(arg[1], line)<<4);
 	  else if ((strcmp(arg[0], "STPCL") == 0)   or (strcmp(arg[0], "GTL") == 0)   or (strcmp(arg[0], "RETL") == 0)) // goto [register] and link
-        opcode = (13<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[1], line)<<4) | (1<<2);
-	  else if ((strcmp(arg[0], "STPCX") == 0)   or (strcmp(arg[0], "GTX") == 0)   or (strcmp(arg[0], "RETX") == 0)) // goto [register] and switch to user mode
-        opcode = (13<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[1], line)<<4) | (1<<0);
+        opcode = (13<<10)  | (conv_reg(arg[1], line)<<4) | (1<<2);
+	  else if ((strcmp(arg[0], "STPCU") == 0)   or (strcmp(arg[0], "GTU") == 0)   or (strcmp(arg[0], "RETU") == 0)) // goto [register] and switch to user mode
+        opcode = (13<<10)  | (conv_reg(arg[1], line)<<4) | (1<<0);
 	  else if ((strcmp(arg[0], "STPCI") == 0)   or (strcmp(arg[0], "GTI") == 0)   or (strcmp(arg[0], "RETI") == 0)) // goto [register] and set global xint flag
-        opcode = (13<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[1], line)<<4) | (1<<1);
-	  else if ((strcmp(arg[0], "STPCXI") == 0)  or (strcmp(arg[0], "GTXI") == 0)  or (strcmp(arg[0], "RETXI") == 0)) // goto [register] and set global xint flag and switch to user mode
-        opcode = (13<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[1], line)<<4) | (1<<1) | (1<<0);
-	  else if ((strcmp(arg[0], "STPCXL") == 0)  or (strcmp(arg[0], "GTXL") == 0)  or (strcmp(arg[0], "RETXL") == 0)) // goto [register] and switch to user mode and link
-        opcode = (13<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[1], line)<<4) | (1<<2) | (1<<0);
+        opcode = (13<<10)  | (conv_reg(arg[1], line)<<4) | (1<<1);
+	  else if ((strcmp(arg[0], "STPCUI") == 0)  or (strcmp(arg[0], "GTUI") == 0)  or (strcmp(arg[0], "RETUI") == 0)) // goto [register] and set global xint flag and switch to user mode
+        opcode = (13<<10)  | (conv_reg(arg[1], line)<<4) | (1<<1) | (1<<0);
+	  else if ((strcmp(arg[0], "STPCUL") == 0)  or (strcmp(arg[0], "GTUL") == 0)  or (strcmp(arg[0], "RETUL") == 0)) // goto [register] and switch to user mode and link
+        opcode = (13<<10)  | (conv_reg(arg[1], line)<<4) | (1<<2) | (1<<0);
 	  else if ((strcmp(arg[0], "STPCIL") == 0)  or (strcmp(arg[0], "GTIL") == 0)  or (strcmp(arg[0], "RETIL") == 0)) // goto [register] and set global xint flag and link
-        opcode = (13<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[1], line)<<4) | (1<<2) | (1<<1);
-	  else if ((strcmp(arg[0], "STPCXIL") == 0) or (strcmp(arg[0], "GTXIL") == 0) or (strcmp(arg[0], "RETXIL") == 0)) // goto [register] and set global xint flag and switch to user mode and link
-        opcode = (13<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[1], line)<<4) | (1<<2) | (1<<1) | (1<<0);
+        opcode = (13<<10)  | (conv_reg(arg[1], line)<<4) | (1<<2) | (1<<1);
+	  else if ((strcmp(arg[0], "STPCUIL") == 0) or (strcmp(arg[0], "GTUIL") == 0) or (strcmp(arg[0], "RETUIL") == 0)) // goto [register] and set global xint flag and switch to user mode and link
+        opcode = (13<<10)  | (conv_reg(arg[1], line)<<4) | (1<<2) | (1<<1) | (1<<0);
+	  else if ((strcmp(arg[0], "STPCX") == 0)   or (strcmp(arg[0], "GTX") == 0)   or (strcmp(arg[0], "RETX") == 0)) // goto [register] and switch to previous mode
+        opcode = (13<<10) | (1<<7) | (conv_reg(arg[1], line)<<4) | (1<<0);
+	  else if ((strcmp(arg[0], "STPCXI") == 0)  or (strcmp(arg[0], "GTXI") == 0)  or (strcmp(arg[0], "RETXI") == 0)) // goto [register] and set global xint flag and switch to previous mode
+        opcode = (13<<10) | (1<<7) | (conv_reg(arg[1], line)<<4) | (1<<1) | (1<<0);
+	  else if ((strcmp(arg[0], "STPCXL") == 0)  or (strcmp(arg[0], "GTXL") == 0)  or (strcmp(arg[0], "RETXL") == 0)) // goto [register] and switch to previous mode and link
+        opcode = (13<<10) | (1<<7) | (conv_reg(arg[1], line)<<4) | (1<<2) | (1<<0);
+	  else if ((strcmp(arg[0], "STPCXIL") == 0) or (strcmp(arg[0], "GTXIL") == 0) or (strcmp(arg[0], "RETXIL") == 0)) // goto [register] and set global xint flag and switch to previous mode and link
+        opcode = (13<<10) | (1<<7) | (conv_reg(arg[1], line)<<4) | (1<<2) | (1<<1) | (1<<0);
  
 	  else if (strcmp(arg[0], "LDPC") == 0) // load program counter to register
         opcode = (14<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[1], line)<<4);
@@ -1384,7 +1392,7 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
 // *****************************************************************************************************************
 int main(int argc, char *argv[]){
 
-    printf("\nAtlas Project - Evaluation Assembler, Version 2013.03.26\n");
+    printf("\nAtlas Project - Evaluation Assembler, Version 2013.04.18\n");
     printf("by Stephan Nolting (stnolting@gmail.com), Hanover, Germany\n\n");
 
 	// pre_processor.asm - intermediate processing file

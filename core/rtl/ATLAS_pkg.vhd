@@ -4,7 +4,7 @@
 -- #  All architecture configurations, options, signal    #
 -- #  definitions and components are listed here.         #
 -- # **************************************************** #
--- #  Last modified: 26.03.2013                           #
+-- #  Last modified: 17.04.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -26,6 +26,7 @@ package atlas_core_package is
 	constant log2_cache_pages_c     : natural := 2;     -- address bits to specify number of cache pages, max 5
 	constant log2_cache_page_size_c : natural := 5;     -- address bits to specify cache page size (in words)
 	constant max_bus_latency_c      : natural := (2**log2_cache_page_size_c)/2; -- max wb bus cycle latency
+	constant word_mode_en_c         : boolean := false; -- use word-addressed memory system instead of byte-addressed
 
 	---- DO NOT CHANGE ANYTHING BELOW UNLESS YOU REALLY KNOW WHAT YOU ARE DOING! ----
 
@@ -33,7 +34,7 @@ package atlas_core_package is
   -- -------------------------------------------------------------------------------------------
 	constant data_width_c      : natural := 16; -- processing data width
 	constant data_bytes_c      : natural := data_width_c/8; -- processing data width in bytes
-	constant align_lsb_c       : natural := data_bytes_c/2; -- lsb of word boundary
+	constant align_lsb_c       : natural := data_bytes_c/2; -- lsb of adr word boundary
 	constant cache_pages_c     : natural := 2**log2_cache_pages_c; -- number of cache pages, max 32
 	constant cache_page_size_c : natural := 2**log2_cache_page_size_c; -- size of cache page in words
 	constant bus_adr_width_c   : natural := 32; -- wishbone bus address width
@@ -41,7 +42,6 @@ package atlas_core_package is
 	constant stack_pnt_adr_c   : std_logic_vector(2 downto 0) := "110"; -- stack pointer
 	constant user_mode_c       : std_logic := '0'; -- user mode indicator
 	constant system_mode_c     : std_logic := '1'; -- system mode indicator
-	constant word_mode_en_c    : boolean := false; -- use word-addressed memory system instead of byte-addressed
 	constant branch_slots_en_c : boolean := false; -- use branch delay slots (highly experimental!!!)
 
 
@@ -66,10 +66,10 @@ package atlas_core_package is
 	constant msr_sys_n_flag_c  : natural := 8;  -- system mode negative flag
 	constant msr_sys_t_flag_c  : natural := 9;  -- system mode transfer flag
 	constant msr_usr_cp_ptc_c  : natural := 10; -- user coprocessor protected
---	constant msr_reserved_c    : natural := 11; -- reserved
-	constant msr_xint_en_c     : natural := 12; -- enable external interrupts (global)
-	constant msr_xint0_en_c    : natural := 13; -- enable external interrupt 0
-	constant msr_xint1_en_c    : natural := 14; -- enable external interrupt 1
+	constant msr_xint_en_c     : natural := 11; -- enable external interrupts (global)
+	constant msr_xint0_en_c    : natural := 12; -- enable external interrupt 0
+	constant msr_xint1_en_c    : natural := 13; -- enable external interrupt 1
+	constant msr_svd_mode_c    : natural := 14; -- saved operating mode
 	constant msr_mode_flag_c   : natural := 15; -- system ('1') / user ('0') mode
 
 
@@ -161,36 +161,37 @@ package atlas_core_package is
 	constant ctrl_cond_2_c     : natural := 37; -- condition code bit 2
 	constant ctrl_cond_3_c     : natural := 38; -- condition code bit 3
 	constant ctrl_branch_c     : natural := 39; -- is branch operation
-	constant ctrl_link_c       : natural := 40; -- store old pc
+	constant ctrl_link_c       : natural := 40; -- store old pc to lr
 	constant ctrl_syscall_c    : natural := 41; -- is a system call
 	constant ctrl_ctx_down_c   : natural := 42; -- go to user mode
+	constant ctrl_restsm_c     : natural := 43; -- restore saved mode
 
 	-- Memory Access --
-	constant ctrl_mem_acc_c    : natural := 43; -- request d-mem access
-	constant ctrl_mem_wr_c     : natural := 44; -- write to d-mem
-	constant ctrl_mem_bpba_c   : natural := 45; -- use bypassed base address
-	constant ctrl_mem_daa_c    : natural := 46; -- use delayed address
+	constant ctrl_mem_acc_c    : natural := 44; -- request d-mem access
+	constant ctrl_mem_wr_c     : natural := 45; -- write to d-mem
+	constant ctrl_mem_bpba_c   : natural := 46; -- use bypassed base address
+	constant ctrl_mem_daa_c    : natural := 47; -- use delayed address
 
 	-- Coprocessor Access --
-	constant ctrl_cp_acc_c     : natural := 47; -- coprocessor operation
-	constant ctrl_cp_trans_c   : natural := 48; -- coprocessor data transfer
-	constant ctrl_cp_wr_c      : natural := 49; -- write to coprocessor
-	constant ctrl_cp_id_c      : natural := 50; -- coprocessor id bit
+	constant ctrl_cp_acc_c     : natural := 48; -- coprocessor operation
+	constant ctrl_cp_trans_c   : natural := 49; -- coprocessor data transfer
+	constant ctrl_cp_wr_c      : natural := 50; -- write to coprocessor
+	constant ctrl_cp_id_c      : natural := 51; -- coprocessor id bit
 
 	-- Multiply-and-Acuumulate Unit --
-	constant ctrl_use_mac_c    : natural := 51; -- use MAC unit
-	constant ctrl_load_mac_c   : natural := 52; -- load addition buffer for MAC
-	constant ctrl_use_offs_c   : natural := 53; -- use loaded offset
+	constant ctrl_use_mac_c    : natural := 52; -- use MAC unit
+	constant ctrl_load_mac_c   : natural := 53; -- load addition buffer for MAC
+	constant ctrl_use_offs_c   : natural := 54; -- use loaded offset
 
 --	-- EX Forwarding --
---	constant ctrl_a_ex_ma_fw_c : natural := 54;
---	constant ctrl_a_ex_wb_fw_c : natural := 55;
---	constant ctrl_b_ex_ma_fw_c : natural := 56;
---	constant ctrl_b_ex_wb_fw_c : natural := 57;
---	constant ctrl_c_ex_wb_fw_c : natural := 58;
+--	constant ctrl_a_ex_ma_fw_c : natural := 55;
+--	constant ctrl_a_ex_wb_fw_c : natural := 56;
+--	constant ctrl_b_ex_ma_fw_c : natural := 57;
+--	constant ctrl_b_ex_wb_fw_c : natural := 58;
+--	constant ctrl_c_ex_wb_fw_c : natural := 59;
 
 	-- Bus Size --
-	constant ctrl_width_c      : natural := 54; -- control bus size
+	constant ctrl_width_c      : natural := 55; -- control bus size
 
 	-- Progress Redefinitions --
 	constant ctrl_wb_en_c      : natural := ctrl_rd_wb_c;   -- valid write back
@@ -294,10 +295,15 @@ package atlas_core_package is
 
   -- Cool Stuff -----------------------------------------------------------------------------
   -- -------------------------------------------------------------------------------------------
-	-- Carrie Underwood - Thank God For The Hometowns
-	-- Precious - Das Leben ist kostbar
-	-- Mean Creek
-	-- Mumford & Sons - Lover of the Light
+	-- S: Carrie Underwood - Thank God For The Hometowns
+	-- M: Precious - Das Leben ist kostbar
+	-- M: Mean Creek
+	-- S: Mumford & Sons - Lover of the Light
+	-- M: 127 Hours
+
+  -- Functions ------------------------------------------------------------------------------
+  -- -------------------------------------------------------------------------------------------
+	function log2(temp : natural) return natural; -- logarithm base 2
 
 
   -- Component: Data Register File ----------------------------------------------------------
@@ -640,5 +646,26 @@ package atlas_core_package is
 				MEM_DP_ADR_O    : out std_logic_vector(data_width_c-1 downto 0)  -- data page
 			);
   end component;
+
+
+
+end atlas_core_package;
+
+package body atlas_core_package is
+
+  -- Function: Logarithm Base 2 -------------------------------------------------------------
+  -- -------------------------------------------------------------------------------------------
+	function log2(temp : natural) return natural is
+		variable result : natural;
+	begin
+		for i in 0 to integer'high loop
+			if (2**i >= temp) then
+				return i;
+			end if;
+		end loop;
+		return 0;
+	end function log2;
+
+
 
 end atlas_core_package;

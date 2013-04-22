@@ -6,7 +6,7 @@
 -- #  processing circuits are implemented within this     #
 -- #  unit.                                               #
 -- # **************************************************** #
--- #  Last modified: 26.03.2013                           #
+-- #  Last modified: 17.04.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -151,20 +151,22 @@ begin
 					SYS_REG_PC                   <= BOOT_ADDRESS_G; -- boot address
 					SYS_REG_MSR                  <= (others => '0');
 					SYS_REG_MSR(msr_mode_flag_c) <= system_mode_c; -- we're the king after reset
+					SYS_REG_MSR(msr_svd_mode_c)  <= system_mode_c;
 				elsif (CE_I = '1') then -- clock enable
 
-					-- Exception MSR Access -------------------------------------------------
+					-- Exception MSR Update -------------------------------------------------
 					if (INT_REQ = '1') then -- switch to system mode
 						SYS_REG_MSR(msr_mode_flag_c) <= system_mode_c; -- goto sytem mode
+						SYS_REG_MSR(msr_svd_mode_c)  <= SYS_REG_MSR(msr_mode_flag_c); -- save current mode
 						SYS_REG_MSR(msr_xint_en_c)   <= '0'; -- clear global xint enable flag
 
-					-- Manual MSR Access ----------------------------------------------------
+					-- Manual MSR Update ----------------------------------------------------
 					elsif (EX_CTRL_BUS_I(ctrl_en_c) = '1') then -- valid operation
 						if (EX_CTRL_BUS_I(ctrl_msr_wr_c) = '1') then -- write operation
 							case (m_msr_acc_v) is
-								when "100" => -- system mode: full access
+								when "100" => -- system mode: full update
 									SYS_REG_MSR <= MSR_DATA_I;
-								when "101" => -- system mode: access all ALU flags
+								when "101" => -- system mode: update all ALU flags
 									SYS_REG_MSR(msr_usr_z_flag_c) <= MSR_DATA_I(msr_usr_z_flag_c);
 									SYS_REG_MSR(msr_usr_c_flag_c) <= MSR_DATA_I(msr_usr_c_flag_c);
 									SYS_REG_MSR(msr_usr_o_flag_c) <= MSR_DATA_I(msr_usr_o_flag_c);
@@ -175,13 +177,13 @@ begin
 									SYS_REG_MSR(msr_sys_o_flag_c) <= MSR_DATA_I(msr_sys_o_flag_c);
 									SYS_REG_MSR(msr_sys_n_flag_c) <= MSR_DATA_I(msr_sys_n_flag_c);
 									SYS_REG_MSR(msr_sys_t_flag_c) <= MSR_DATA_I(msr_sys_t_flag_c);
-								when "110" => -- system mode: only access system ALU flags
+								when "110" => -- system mode: only update system ALU flags
 									SYS_REG_MSR(msr_sys_z_flag_c) <= MSR_DATA_I(msr_sys_z_flag_c);
 									SYS_REG_MSR(msr_sys_c_flag_c) <= MSR_DATA_I(msr_sys_c_flag_c);
 									SYS_REG_MSR(msr_sys_o_flag_c) <= MSR_DATA_I(msr_sys_o_flag_c);
 									SYS_REG_MSR(msr_sys_n_flag_c) <= MSR_DATA_I(msr_sys_n_flag_c);
 									SYS_REG_MSR(msr_sys_t_flag_c) <= MSR_DATA_I(msr_sys_t_flag_c);
-								when others => -- system/user mode: only access user ALU flags
+								when others => -- system/user mode: only update user ALU flags
 									SYS_REG_MSR(msr_usr_z_flag_c) <= MSR_DATA_I(msr_usr_z_flag_c);
 									SYS_REG_MSR(msr_usr_c_flag_c) <= MSR_DATA_I(msr_usr_c_flag_c);
 									SYS_REG_MSR(msr_usr_o_flag_c) <= MSR_DATA_I(msr_usr_o_flag_c);
@@ -189,13 +191,20 @@ begin
 									SYS_REG_MSR(msr_usr_t_flag_c) <= MSR_DATA_I(msr_usr_t_flag_c);								
 							end case;
 
-					-- Automatic MSR Access -------------------------------------------------
-						elsif (EX_CTRL_BUS_I(ctrl_ctx_down_c) = '1') then -- context down switch?
-							SYS_REG_MSR(msr_mode_flag_c) <= user_mode_c; -- go down to user mode
+					-- Context Change -------------------------------------------------------
+						elsif (EX_CTRL_BUS_I(ctrl_ctx_down_c) = '1') or (EX_CTRL_BUS_I(ctrl_restsm_c) = '1') then -- context down/switch
+							SYS_REG_MSR(msr_svd_mode_c) <= SYS_REG_MSR(msr_mode_flag_c); -- save current mode
+							if (EX_CTRL_BUS_I(ctrl_ctx_down_c) = '1') then
+								SYS_REG_MSR(msr_mode_flag_c) <= user_mode_c; -- go down to user mode
+							elsif (EX_CTRL_BUS_I(ctrl_restsm_c) = '1') then
+								SYS_REG_MSR(msr_mode_flag_c) <= SYS_REG_MSR(msr_svd_mode_c); -- restore old mode
+							end if;
 							if (SYS_REG_MSR(msr_mode_flag_c) = system_mode_c) then -- only in system mode!
 								SYS_REG_MSR(msr_xint_en_c) <= EX_CTRL_BUS_I(ctrl_re_xint_c); -- auto re-enable global x_ints
 							end if;
-						else -- auto-update
+
+					-- Automatic MSR Update -------------------------------------------------
+						else
 							if (SYS_REG_MSR(msr_mode_flag_c) = user_mode_c) then -- user mode auto alu flag update
 								if(EX_CTRL_BUS_I(ctrl_fupdate_c) = '1') then -- allow auto update of ALU flags
 									SYS_REG_MSR(msr_usr_z_flag_c) <= FLAG_BUS_I(flag_z_c);
@@ -220,12 +229,12 @@ begin
 						end if;
 					end if;
 
-					-- Exception PC Access --------------------------------------------------
+					-- Exception PC Update --------------------------------------------------
 					if (INT_REQ = '1') then
 						SYS_REG_PC <= (others => '0');
 						SYS_REG_PC(2 downto 1) <= INT_VECTOR;
 
-					-- Manual/Branch PC Access ----------------------------------------------
+					-- Manual/Branch PC Update ----------------------------------------------
 					elsif (VALID_BRANCH = '1') or ((EX_CTRL_BUS_I(ctrl_en_c) = '1') and (EX_CTRL_BUS_I(ctrl_ctx_down_c) = '1')) then -- valid automatic/manual update/goto user mode
 						SYS_REG_PC <= PC_DATA_I;
 
@@ -254,7 +263,7 @@ begin
 
 		-- Special Flag output --
 		CP_PTC_O <= SYS_REG_MSR(msr_usr_cp_ptc_c); -- user coprocessor protection
-		MODE_O   <= SYS_REG_MSR(msr_mode_flag_c); -- current operating mode
+		MODE_O   <= SYS_REG_MSR(msr_mode_flag_c);  -- current operating mode
 
 
 

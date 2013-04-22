@@ -3,7 +3,7 @@
 -- # **************************************************** #
 -- #  Wishbone-compatible demo memory.                    #
 -- # **************************************************** #
--- #  Last modified: 13.03.2013                           #
+-- #  Last modified: 01.04.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -17,9 +17,7 @@ use work.atlas_core_package.all;
 
 entity TEST_MEM is
 	generic	(
-				MEM_SIZE      : natural := 256;  -- memory cells
-				LOG2_MEM_SIZE : natural := 8;    -- log2(memory cells)
-				OUTPUT_GATE   : boolean := FALSE -- output and-gate, might be necessary for some bus systems
+				MEM_SIZE_G    : natural := 256 -- memory size in bytes
 			);
 	port	(
 				-- Wishbone Bus --
@@ -41,18 +39,21 @@ end TEST_MEM;
 
 architecture TEST_MEM_STRUCTURE of TEST_MEM is
 
+	--- Internal Constants --
+	constant LOG2_MEM_SIZE : natural := log2(MEM_SIZE_G); -- address width
+
 	--- Buffer ---
 	signal WB_ACK_O_INT : std_logic;
 	signal WB_DATA_INT  : std_logic_vector(data_width_c-1 downto 0);
 
 	--- Memory Type ---
-	type MEM_FILE_TYPE is array (0 to MEM_SIZE-1) of std_logic_vector(data_width_c-1 downto 0);
+	type MEM_FILE_TYPE is array (0 to MEM_SIZE_G-1) of std_logic_vector(data_width_c-1 downto 0);
 
 	--- INIT MEMORY IMAGE ---
 	------------------------------------------------------
 	signal MEM_FILE : MEM_FILE_TYPE :=
 	(
-		-- Place memory init code here --
+		-- This is where you have to place the "init.vhd" file content --
 	);
 	------------------------------------------------------
 
@@ -84,7 +85,7 @@ begin
 		end process MEM_FILE_ACCESS;
 
 		--- Output Gate ---
-		WB_DATA_O <= WB_DATA_INT when (OUTPUT_GATE = FALSE) or ((OUTPUT_GATE = TRUE) and (WB_STB_I = '1')) else (others => '0');
+		WB_DATA_O <= WB_DATA_INT;
 
 		--- ACK Signal ---
 		WB_ACK_O  <= WB_ACK_O_INT and WB_CYC_I;

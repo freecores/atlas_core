@@ -4,7 +4,7 @@
 -- #  This is the top entity of the CPU core.             #
 -- #  All submodules are instantiated here.               #
 -- # **************************************************** #
--- #  Last modified: 27.03.2013                           #
+-- #  Last modified: 01.04.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -114,7 +114,7 @@ architecture ATLAS_CORE_STRUCTURE of ATLAS_CORE is
 
 	-- Flag Stuff --
 	signal ALU_FLAG_I    : std_logic_vector(flag_bus_width_c-1 downto 0); -- alu flag input
-	signal ALU_FLAG_O    : std_logic_vector(flag_bus_width_c-1 downto 0); -- alu flag input
+	signal ALU_FLAG_O    : std_logic_vector(flag_bus_width_c-1 downto 0); -- alu flag output
 	signal MSR_W_DATA    : std_logic_vector(data_width_c-1 downto 0); -- msr write data
 	signal MSR_R_DATA    : std_logic_vector(data_width_c-1 downto 0); -- msr read data
 

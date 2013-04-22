@@ -54,9 +54,7 @@ architecture processor_tb_structure of processor_tb is
   -- -------------------------------------------------------------------------------------------
   component TEST_MEM
 	generic	(
-				MEM_SIZE      : natural := 256;  -- memory cells
-				LOG2_MEM_SIZE : natural := 8;    -- log2(memory cells)
-				OUTPUT_GATE   : boolean := FALSE -- output and-gate, might be necessary for some bus systems
+				MEM_SIZE_G    : natural := 256 -- memory size in bytes
 			);
 	port	(
 				-- Wishbone Bus --
@@ -160,6 +158,9 @@ begin
 	-- Memory ----------------------------------------------------------------------------------------------
 	-- --------------------------------------------------------------------------------------------------------
 		test_memory: TEST_MEM
+			generic map (
+							MEM_SIZE_G  => 256 -- memory size in bytes
+						)
 			port map (
 				-- Wishbone Bus --
 						WB_CLK_I        => G_CLK, -- memory master clock

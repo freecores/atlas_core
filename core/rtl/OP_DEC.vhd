@@ -3,7 +3,7 @@
 -- # **************************************************** #
 -- #  OpCode decoding unit.                               #
 -- # **************************************************** #
--- #  Last modified: 28.03.2013                           #
+-- #  Last modified: 19.04.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -144,11 +144,9 @@ begin
 									CTRL_O(ctrl_syscall_c) <= '1'; -- access violation
 								end if;
 								if(MULTI_CYC_I = '0') then
-									CTRL_O(ctrl_msr_wr_c)  <= '1'; -- write msr
-									MULTI_CYC_REQ_O        <= '1'; -- we need a dummy cycle afterwards
-									if (INSTR_INT(4) = '1') then -- store immediate
-										CTRL_O(ctrl_rb_is_imm_c) <= '1'; -- yes, this is an immediate
-									end if;
+									CTRL_O(ctrl_msr_wr_c)    <= '1'; -- write msr
+									MULTI_CYC_REQ_O          <= '1'; -- we need a dummy cycle afterwards
+									CTRL_O(ctrl_rb_is_imm_c) <= INSTR_INT(4); -- store immediate
 								else
 									CTRL_O(ctrl_en_c) <= '0'; -- insert empty cycle
 								end if;
@@ -168,7 +166,7 @@ begin
 							CTRL_O(ctrl_rd_3_c downto ctrl_rd_0_c) <= M_FLAG_I & link_reg_adr_c; -- link register
 							CTRL_O(ctrl_rd_wb_c) <= '0'; -- disable write back
 							if (INSTR_INT(3) = '0') then -- store to PC
-								if ((M_FLAG_I = user_mode_c) and (INSTR_INT(1 downto 0) /= "00")) then
+								if ((M_FLAG_I = user_mode_c) and ((INSTR_INT(1 downto 0) /= "00") or (INSTR_INT(7) = '1'))) then
 									CTRL_O(ctrl_syscall_c) <= '1'; -- access violation
 								end if;
 								CTRL_O(ctrl_pc_wr_c)     <= '1'; -- write pc
@@ -178,6 +176,7 @@ begin
 								CTRL_O(ctrl_re_xint_c)   <= INSTR_INT(1); -- re-enable global xint flag (redundant assignment here)
 								CTRL_O(ctrl_link_c)      <= INSTR_INT(2); -- link
 								CTRL_O(ctrl_rd_wb_c)     <= INSTR_INT(2); -- allow write back for linking
+								CTRL_O(ctrl_restsm_c)    <= INSTR_INT(7); -- restore saved mode
 							end if;
 
 						when fs_inc_c | fs_add_c => -- immediate addition // addition

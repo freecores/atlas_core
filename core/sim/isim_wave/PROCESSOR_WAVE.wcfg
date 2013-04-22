@@ -3,7 +3,7 @@
    <wave_state>
    </wave_state>
    <db_ref_list>
-      <db_ref path="N:/N/Atlas Processor/core/syn/syn_xilinx/processor_tb_isim_beh.wdb" id="1" type="auto">
+      <db_ref path="N:/N/Atlas Processor/core/syn/syn_xilinx/processor_tb_isim_beh1.wdb" id="1" type="auto">
          <top_modules>
             <top_module name="atlas_core_package" />
             <top_module name="numeric_std" />
@@ -12,7 +12,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="93" />
+   <WVObjectSize size="91" />
    <wvobject fp_name="divider11" type="divider">
       <obj_property name="label">Global Control</obj_property>
       <obj_property name="DisplayName">label</obj_property>
@@ -341,18 +341,6 @@
       <obj_property name="ElementShortName">flag_bus_o[4:0]</obj_property>
       <obj_property name="ObjectShortName">flag_bus_o[4:0]</obj_property>
    </wvobject>
-   <wvobject fp_name="/processor_tb/the_core_of_the_problem/processor_core/Executor/sel_bit" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">sel_bit</obj_property>
-      <obj_property name="ObjectShortName">sel_bit</obj_property>
-   </wvobject>
-   <wvobject fp_name="/processor_tb/the_core_of_the_problem/processor_core/Executor/parity_bit" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">parity_bit</obj_property>
-      <obj_property name="ObjectShortName">parity_bit</obj_property>
-   </wvobject>
-   <wvobject fp_name="/processor_tb/the_core_of_the_problem/processor_core/Executor/transf_int" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">transf_int</obj_property>
-      <obj_property name="ObjectShortName">transf_int</obj_property>
-   </wvobject>
    <wvobject fp_name="divider11" type="divider">
       <obj_property name="label">Memory Access</obj_property>
       <obj_property name="DisplayName">label</obj_property>
@@ -375,6 +363,11 @@
    <wvobject fp_name="/processor_tb/the_core_of_the_problem/processor_core/Memory_Access/mem_dat_o" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">mem_dat_o[15:0]</obj_property>
       <obj_property name="ObjectShortName">mem_dat_o[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/processor_tb/the_core_of_the_problem/processor_core/Write_Back/mem_wb_dat_i" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">mem_wb_dat_i[15:0]</obj_property>
+      <obj_property name="ObjectShortName">mem_wb_dat_i[15:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="divider11" type="divider">
