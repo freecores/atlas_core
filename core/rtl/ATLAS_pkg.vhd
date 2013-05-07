@@ -1,10 +1,10 @@
 -- ########################################################
--- #         << ATLAS Project - System Package >>         #
+-- #         << ATLAS Project - Prject Package >>         #
 -- # **************************************************** #
 -- #  All architecture configurations, options, signal    #
 -- #  definitions and components are listed here.         #
 -- # **************************************************** #
--- #  Last modified: 17.04.2013                           #
+-- #  Last modified: 27.04.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -45,6 +45,14 @@ package atlas_core_package is
 	constant branch_slots_en_c : boolean := false; -- use branch delay slots (highly experimental!!!)
 
 
+  -- Interrupt/Exception Vectors ------------------------------------------------------------
+  -- -------------------------------------------------------------------------------------------
+	constant res_int_vec_c     : std_logic_vector(15 downto 0) := x"0000"; -- use boot address instead!
+	constant irq0_int_vec_c    : std_logic_vector(15 downto 0) := x"0001"; -- external int line 0 IRQ
+	constant irq1_int_vec_c    : std_logic_vector(15 downto 0) := x"0002"; -- external int line 1 IRQ
+	constant swi_int_vec_c     : std_logic_vector(15 downto 0) := x"0003"; -- software IRQ
+
+
   -- Wishbone Bus Constants -----------------------------------------------------------------
   -- -------------------------------------------------------------------------------------------
 	constant wb_classic_cyc_c  : std_logic_vector(2 downto 0) := "000"; -- classic cycle
@@ -65,7 +73,7 @@ package atlas_core_package is
 	constant msr_sys_o_flag_c  : natural := 7;  -- system mode overflow flag
 	constant msr_sys_n_flag_c  : natural := 8;  -- system mode negative flag
 	constant msr_sys_t_flag_c  : natural := 9;  -- system mode transfer flag
-	constant msr_usr_cp_ptc_c  : natural := 10; -- user coprocessor protected
+	constant msr_usr_cp_ptc_c  : natural := 10; -- user coprocessor protection
 	constant msr_xint_en_c     : natural := 11; -- enable external interrupts (global)
 	constant msr_xint0_en_c    : natural := 12; -- enable external interrupt 0
 	constant msr_xint1_en_c    : natural := 13; -- enable external interrupt 1
@@ -93,15 +101,6 @@ package atlas_core_package is
 	constant flag_n_c          : natural := 3;  -- user mode negative flag
 	constant flag_t_c          : natural := 4;  -- user mode transfer flag
 	constant flag_bus_width_c  : natural := 5;  -- size of flag bus
-
-	-- Freude, schöner Götterfunken,
-	-- Tochter aus Elysium,
-	-- Wir betreten feuertrunken,
-	-- Himmlische, dein Heiligthum!
-	-- Deine Zauber binden wieder
-	-- Was die Mode streng geteilt;
-	-- Alle Menschen werden Brüder,
-	-- Wo dein sanfter Flügel weilt.
 
 
   -- Main Control Bus -----------------------------------------------------------------------
@@ -184,14 +183,15 @@ package atlas_core_package is
 	constant ctrl_use_offs_c   : natural := 54; -- use loaded offset
 
 --	-- EX Forwarding --
---	constant ctrl_a_ex_ma_fw_c : natural := 55;
---	constant ctrl_a_ex_wb_fw_c : natural := 56;
---	constant ctrl_b_ex_ma_fw_c : natural := 57;
---	constant ctrl_b_ex_wb_fw_c : natural := 58;
---	constant ctrl_c_ex_wb_fw_c : natural := 59;
+--	constant ctrl_a_ex_ma_fw_c : natural := 55; -- obsolete
+--	constant ctrl_a_ex_wb_fw_c : natural := 56; -- obsolete
+--	constant ctrl_b_ex_ma_fw_c : natural := 57; -- obsolete
+--	constant ctrl_b_ex_wb_fw_c : natural := 58; -- obsolete
+--	constant ctrl_c_ex_wb_fw_c : natural := 59; -- obsolete
 
 	-- Bus Size --
 	constant ctrl_width_c      : natural := 55; -- control bus size
+--	constant ctrl_width_c      : natural := 60; -- obsolete
 
 	-- Progress Redefinitions --
 	constant ctrl_wb_en_c      : natural := ctrl_rd_wb_c;   -- valid write back
@@ -300,6 +300,9 @@ package atlas_core_package is
 	-- M: Mean Creek
 	-- S: Mumford & Sons - Lover of the Light
 	-- M: 127 Hours
+	-- M: Hart of Dixie
+	-- M: Nick und Norah - Soundtack einer Nacht
+
 
   -- Functions ------------------------------------------------------------------------------
   -- -------------------------------------------------------------------------------------------
@@ -648,7 +651,6 @@ package atlas_core_package is
   end component;
 
 
-
 end atlas_core_package;
 
 package body atlas_core_package is
@@ -665,7 +667,6 @@ package body atlas_core_package is
 		end loop;
 		return 0;
 	end function log2;
-
 
 
 end atlas_core_package;

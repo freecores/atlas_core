@@ -6,7 +6,7 @@
 -- #  processing circuits are implemented within this     #
 -- #  unit.                                               #
 -- # **************************************************** #
--- #  Last modified: 17.04.2013                           #
+-- #  Last modified: 27.04.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -80,8 +80,8 @@ architecture SR_STRUCTURE of SYS_REG is
 
 	-- Interrupt System --
 	signal INT_REQ         : std_logic;
-	signal INT_VECTOR      : std_logic_vector(1 downto 0);
-	signal XINT_SYNC       : std_logic_vector(1 downto 0);
+	signal INT_VECTOR      : std_logic_vector(15 downto 0);
+	signal XINT_SYNC       : std_logic_vector(01 downto 0);
 	signal XINT_0_TAKEN    : std_logic;
 	signal XINT_1_TAKEN    : std_logic;
 
@@ -118,17 +118,17 @@ begin
 			-- exception priority list and encoding --
 			if ((xint0_valid_v = '1') and (XINT_SYNC(0) = '1')) then -- external interrupt 0
 				INT_REQ    <= '1';
-				INT_VECTOR <= "01"; -- ext int 0 vector
+				INT_VECTOR <= irq0_int_vec_c;
 			elsif ((xint1_valid_v = '1') and (XINT_SYNC(1) = '1')) then -- external interrupt 1
 				INT_REQ    <= '1';
-				INT_VECTOR <= "10"; -- ext int 1 vector
+				INT_VECTOR <= irq1_int_vec_c;
 			elsif ((EXC_POS_I = '1') and (EX_CTRL_BUS_I(ctrl_syscall_c) = '1')) then
 			-- software interrupt: system call // msr/coprocessor access violation // undefined instruction
 				INT_REQ    <= '1';
-				INT_VECTOR <= "11"; -- sw int vector
+				INT_VECTOR <= swi_int_vec_c;
 			else -- no exception
 				INT_REQ    <= '0';
-				INT_VECTOR <= "00"; -- irrelevant [hw reset vector]
+				INT_VECTOR <= res_int_vec_c; -- irrelevant, use boot address config instaed!
 			end if;
 		end process EXC_SYS;
 
@@ -231,8 +231,7 @@ begin
 
 					-- Exception PC Update --------------------------------------------------
 					if (INT_REQ = '1') then
-						SYS_REG_PC <= (others => '0');
-						SYS_REG_PC(2 downto 1) <= INT_VECTOR;
+						SYS_REG_PC <= INT_VECTOR;
 
 					-- Manual/Branch PC Update ----------------------------------------------
 					elsif (VALID_BRANCH = '1') or ((EX_CTRL_BUS_I(ctrl_en_c) = '1') and (EX_CTRL_BUS_I(ctrl_ctx_down_c) = '1')) then -- valid automatic/manual update/goto user mode
