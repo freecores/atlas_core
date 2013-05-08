@@ -1049,8 +1049,12 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
         opcode = (2<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
       else if (strcmp(arg[0], "ADC") == 0)
         opcode = (3<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
-      else if (strcmp(arg[0], "SUB") == 0)
+      else if (strcmp(arg[0], "SUB") == 0){
+      	if (conv_reg(arg[2], line) == conv_reg(arg[3], line)) { printf("WARNING: Redundant SUB will result in NEG instruction! (line &d)\n", line); warning_cnt++;}
         opcode = (4<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
+      }
+      else if (strcmp(arg[0], "NEG") == 0)
+      	opcode = (4<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[2], line);
       else if (strcmp(arg[0], "SBC") == 0)
         opcode = (5<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
       else if ((strcmp(arg[0], "CMP") == 0) or (strcmp(arg[0], "CMPS") == 0))
@@ -1058,13 +1062,13 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
       else if ((strcmp(arg[0], "CPX") == 0) or (strcmp(arg[0], "CPXS") == 0))
         opcode = (7<<10) | (1<<3) | (conv_reg(arg[1], line)<<4) | conv_reg(arg[2], line);
       else if (strcmp(arg[0], "AND") == 0){
-	    if (conv_reg(arg[2], line) == conv_reg(arg[3], line)) printf("WARNING: Redundant AND will result in STUB instruction! (line &d)\n", line);
+	    if (conv_reg(arg[2], line) == conv_reg(arg[3], line)) { printf("WARNING: Redundant AND will result in STUB instruction! (line &d)\n", line); warning_cnt++;}
         opcode = (8<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
 	  }
       else if (strcmp(arg[0], "STUB") == 0) // store register to user bank register
         opcode = (8<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[2], line);
       else if (strcmp(arg[0], "ORR") == 0){
-	    if (conv_reg(arg[2], line) == conv_reg(arg[3], line)) printf("WARNING: Redundant ORR will result in LDUB instruction! (line &d)\n", line);
+	    if (conv_reg(arg[2], line) == conv_reg(arg[3], line)) { printf("WARNING: Redundant ORR will result in LDUB instruction! (line &d)\n", line); warning_cnt++;}
         opcode = (9<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
 	  }
       else if (strcmp(arg[0], "LDUB") == 0) // load register from user bank register
@@ -1092,8 +1096,12 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
         opcode = (2<<10) | (1<<3) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
       else if (strcmp(arg[0], "ADCS") == 0)
         opcode = (3<<10) | (1<<3) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
-      else if (strcmp(arg[0], "SUBS") == 0)
+      else if (strcmp(arg[0], "SUBS") == 0){
+      	if (conv_reg(arg[2], line) == conv_reg(arg[3], line)) { printf("WARNING: Redundant SUBS will result in NEG instruction! (line &d)\n", line); warning_cnt++;}
         opcode = (4<<10) | (1<<3) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
+		}
+      else if (strcmp(arg[0], "NEGS") == 0)
+      	opcode = (4<<10) | (1<<3) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[2], line);
       else if (strcmp(arg[0], "SBCS") == 0)
         opcode = (5<<10) | (1<<3) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
       else if (strcmp(arg[0], "LDSR") == 0) // load register from msr
@@ -1105,13 +1113,13 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
         opcode = (7<<10) | ((temp>>3)<<7) | (1<<6) | (conv_flag_op_2(arg[2], line)<<5) | (1<<4) | (temp & 7);
 	  }
       else if (strcmp(arg[0], "ANDS") == 0){
-	    if (conv_reg(arg[2], line) == conv_reg(arg[3], line)) printf("WARNING: Redundant ANDS will result in STUBS instruction! (line &d)\n", line);
+	    if (conv_reg(arg[2], line) == conv_reg(arg[3], line)) { printf("WARNING: Redundant ANDS will result in STUBS instruction! (line &d)\n", line); warning_cnt++;}
         opcode = (8<<10) | (1<<3) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
 	  }
       else if (strcmp(arg[0], "STUBS") == 0) // store register to user bank register and set flags
         opcode = (8<<10) | (1<<3) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[2], line);
       else if (strcmp(arg[0], "ORRS") == 0){
-	    if (conv_reg(arg[2], line) == conv_reg(arg[3], line)) printf("WARNING: Redundant ORRS will result in LDUBS instruction! (line &d)\n", line);
+	    if (conv_reg(arg[2], line) == conv_reg(arg[3], line)) { printf("WARNING: Redundant ORRS will result in LDUBS instruction! (line &d)\n", line); warning_cnt++;}
         opcode = (9<<10) | (1<<3) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
 	  }
       else if (strcmp(arg[0], "LDUBS") == 0) // load register from user bank register and set flags
@@ -1392,7 +1400,7 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
 // *****************************************************************************************************************
 int main(int argc, char *argv[]){
 
-    printf("\nAtlas Project - Evaluation Assembler, Version 2013.04.18\n");
+    printf("\nAtlas Project - Evaluation Assembler, Version 2013.05.08\n");
     printf("by Stephan Nolting (stnolting@gmail.com), Hanover, Germany\n\n");
 
 	// pre_processor.asm - intermediate processing file

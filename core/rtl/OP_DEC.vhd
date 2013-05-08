@@ -3,7 +3,7 @@
 -- # **************************************************** #
 -- #  OpCode decoding unit.                               #
 -- # **************************************************** #
--- #  Last modified: 19.04.2013                           #
+-- #  Last modified: 08.05.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -60,7 +60,8 @@ begin
 	-- Opcode Decoder --------------------------------------------------------------------------------------
 	-- --------------------------------------------------------------------------------------------------------
 		OPCODE_DECODER: process(INSTR_INT, MULTI_CYC_I, T_FLAG_I, M_FLAG_I, CP_PTC_I)
-			variable mem_acc_temp_v : std_logic_vector(3 downto 0);
+			variable mem_acc_temp_v  : std_logic_vector(3 downto 0);
+			variable redundant_reg_v : std_logic;
 		begin
 
 			-- defaults --
@@ -74,6 +75,12 @@ begin
 			CTRL_O(ctrl_rd_3_c   downto ctrl_rd_0_c)   <= M_FLAG_I & INSTR_INT(09 downto 07); -- destination register
 			CTRL_O(ctrl_bit_3_c  downto ctrl_bit_0_c)  <= INSTR_INT(03 downto 00);            -- bit address
 			CTRL_O(ctrl_cond_3_c downto ctrl_cond_0_c) <= INSTR_INT(13 downto 10);            -- branch condition
+
+			-- both operands have same addresses --
+			redundant_reg_v := '0';
+			if (INSTR_INT(06 downto 04) = INSTR_INT(02 downto 00)) then
+				redundant_reg_v := '1';
+			end if;
 
 			-- decoder --
 			case (INSTR_INT(15 downto 14)) is
@@ -91,7 +98,7 @@ begin
 
 						when fs_orr_c => -- logical or // load from user bank register if redundant
 							CTRL_O(ctrl_alu_fs_2_c downto ctrl_alu_fs_0_c) <= alu_orr_c; -- logical or
-							if (INSTR_INT(06 downto 04) = INSTR_INT(02 downto 00)) then -- user bank load
+							if (redundant_reg_v = '1') then -- user bank load
 								CTRL_O(ctrl_ra_3_c) <= user_mode_c; -- load from user bank
 								CTRL_O(ctrl_rb_3_c) <= user_mode_c; -- load from user bank
 								if (M_FLAG_I = user_mode_c) then -- unauthorized access
@@ -101,7 +108,7 @@ begin
 
 						when fs_and_c => -- logical and // store to user bank register if redundant
 							CTRL_O(ctrl_alu_fs_2_c downto ctrl_alu_fs_0_c) <= alu_and_c; -- logical and
-							if (INSTR_INT(06 downto 04) = INSTR_INT(02 downto 00)) then -- user bank store
+							if (redundant_reg_v = '1') then -- user bank store
 								CTRL_O(ctrl_rd_3_c) <= user_mode_c; -- store to user bank
 								if (M_FLAG_I = user_mode_c) then -- unauthorized access
 									CTRL_O(ctrl_syscall_c) <= '1'; -- access violation
@@ -182,8 +189,15 @@ begin
 						when fs_inc_c | fs_add_c => -- immediate addition // addition
 							CTRL_O(ctrl_alu_fs_2_c downto ctrl_alu_fs_0_c) <= alu_adc_c;
 
-						when fs_dec_c | fs_sub_c => -- immediate subtraction // addition
+						when fs_dec_c => -- immediate subtraction
 							CTRL_O(ctrl_alu_fs_2_c downto ctrl_alu_fs_0_c) <= alu_sbc_c;
+
+						when fs_sub_c => -- subtraction
+							CTRL_O(ctrl_alu_fs_2_c downto ctrl_alu_fs_0_c) <= alu_sbc_c;
+							if (redundant_reg_v = '1') then -- SUB instruction with Ra = Rb: Rd = 0 - Ra (NEG Rd, Ra)
+								CTRL_O(ctrl_clr_la_c) <= '1'; -- set low byte of A to 0
+								CTRL_O(ctrl_clr_ha_c) <= '1'; -- set high byte of A to 0
+							end if;
 
 						when fs_adc_c => -- addition with carry
 							CTRL_O(ctrl_alu_fs_2_c downto ctrl_alu_fs_0_c) <= alu_adc_c;
