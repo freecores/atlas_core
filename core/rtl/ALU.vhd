@@ -4,7 +4,7 @@
 -- #  The main data processing is done here. Also the CP  #
 -- #  interface emerges from this unit.                   #
 -- # **************************************************** #
--- #  Last modified: 27.03.2013                           #
+-- #  Last modified: 13.05.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -292,13 +292,13 @@ begin
 			-- elementary function control --
 			case (EX_CTRL_BUS_I(ctrl_alu_fs_2_c downto ctrl_alu_fs_0_c)) is
 				when alu_and_c => -- logical and
-					ALU_RES_INT <= mask_data_v and OP_B_INT; -- mask irrelevant
+					ALU_RES_INT <= OP_A_INT and OP_B_INT; -- mask irrelevant
 				when alu_orr_c => -- logical or
 					ALU_RES_INT <= mask_data_v or OP_B_INT; -- use mask data for immediate loading
 				when alu_eor_c => -- logical xor
-					ALU_RES_INT <= mask_data_v xor OP_B_INT; -- mask irrelevant
+					ALU_RES_INT <= OP_A_INT xor OP_B_INT; -- mask irrelevant
 				when alu_nand_c => -- logical nand
-					ALU_RES_INT <= mask_data_v nand OP_B_INT; -- mask irrelevant
+					ALU_RES_INT <= OP_A_INT nand OP_B_INT; -- mask irrelevant
 				when alu_bic_c => -- bit clear (a and (not b))
 					ALU_RES_INT <= OP_A_INT and (not OP_B_INT);
 				when alu_sft_c => -- shift (alu_sft_c)

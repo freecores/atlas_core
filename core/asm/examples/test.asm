@@ -1,5 +1,5 @@
 ; -------------------------------------------------------------------------------------------------
-; ATLAS ASSEMBLER test/example program file, March 2013
+; ATLAS ASSEMBLER test/example program file, May 2013
 ; -------------------------------------------------------------------------------------------------
 
 ; -> for all further lexical explanations see the rules given between the '>' and '<' symbol
@@ -14,14 +14,14 @@
 ; definitions: >.equ<> <>alias_name<> <>real_name/constant<
 ; do not use a definition name also as label name!
 ; .equ definitions must be at the beginning of a program (before actual code)
-.equ cnt  r0 ; counter register
-.equ data r3 ; data transfer register
-.equ LR   r7 ; r7 is always the link register
-.equ dec_val        #1  ; constant/immediate alias used for decrement
-.equ msr_xint0_en   #13 ; this is the MSR's external interrupt 0 enable flag
-.equ msr_xint1_en   #14 ; this is the MSR's external interrupt 1 enable flag
-.equ data_area_size #4  ; space area alias
-.equ bytes          #4  ; number of bytes to transfer within the demo program
+.equ cnt  r0              ; counter register
+.equ data r3              ; data transfer register
+.equ LR   r7              ; r7 is always the link register
+.equ dec_val        #1    ; constant/immediate alias used for decrement
+.equ msr_xint0_en   #13   ; this is the MSR's external interrupt 0 enable flag
+.equ msr_xint1_en   #14   ; this is the MSR's external interrupt 1 enable flag
+.equ data_area_size #4    ; space area alias
+.equ bytes          #4    ; number of bytes to transfer within the demo program
 .equ some_data      #1289 ; just some data for memory init
 
 
@@ -32,15 +32,15 @@
 
 ; labels: >lable_name: letters, numbers and '_' symbols<>:<
 ; only one label can point to one specific location (so no redundant labels!!!)
-reset_vec:		b init ; destination after reset, always starting in system mode
+reset_vec:		b init          ; destination after reset, always starting in system mode
 x_int0_vec:		b x_int_handler ; external interrupt 0 interrupt handler
 x_int1_vec:		b x_int_handler ; external interrupt 1 interrupt handler
-swi_vec:		b swi_handler ; software interrupt exception handler
+swi_vec:		b swi_handler   ; software interrupt exception handler
 
 
 ; Exception handlers (system mode)
 ; -------------------------------------------------------------------------------------------------
-swi_handler:
+swi_handler: ; SOFTWARE INTERRUPT HANDLER
 ; instructions
 ; >cmd mnemonic<> <>OP1<>,<> <>OP2<>,<> < ...
 			dec  LR, LR, #2 ; restore WORD (!!!) address of calling instruction
@@ -56,7 +56,8 @@ swi_handler:
 nirvana:	b nirvana ; this is the end, my friend...
 
 
-x_int_handler: ; do nothing in this exception handlers but return
+x_int_handler: ; EXTERNAL INTERRUPT HANDLER
+            ; do nothing in this exception handlers but return
 			dec LR, LR, #2 ; restore WORD (!!!) address of interrupted instruction
 			b skip_dummy_mem_area ; skip dummy mem area
 
@@ -73,19 +74,19 @@ skip_dummy_mem_area:
 ; -------------------------------------------------------------------------------------------------
 init:		ldil r0, #xlow[main_usr]  ; get extended (upper 16-bit of 32-bit) low address byte of label "main_usr" - just a demo, it is 0 here
 			ldih r0, #xhigh[main_usr] ; get extended (upper 16-bit of 32-bit) high address byte of label "main_usr" - just a demo, it is 0 here
-			ldil r0, #low[main_usr]  ; get low address byte of label "main_usr"
-			ldih r0, #high[main_usr] ; get high address byte of label "main_usr"
+			ldil r0, #low[main_usr]   ; get low address byte of label "main_usr"
+			ldih r0, #high[main_usr]  ; get high address byte of label "main_usr"
 			
-			ldsr r1
+			ldsr r1                   ; copy machine status register to r1
 			sbr  r1, r1, msr_xint0_en ; enable external interrupt 0 mask, no '#'-prefix when using a constant definition!
-			stsr r1
+			stsr r1                   ; store r1 to machine status register
 
 			gtui r0 ; enable external interrupts and resume operation in user mode at [r0]
 
 .space #4 ; just some space (4*x"0000") to isolate user program...
 
 
-; Here starts the user program (of course in user mode)
+; Here starts the user program (of course in user mode^^)
 ; -------------------------------------------------------------------------------------------------
 main_usr:	ldil cnt, #low[bytes] ; loading a sign extended constant definition -> number of bytes to transfer
 
@@ -135,3 +136,5 @@ test_mem_data_table:
 .dw some_data ; you can also use definitions here
 .dw [test_mem_data_table] ; here, the absolute address (inside a page) of branch label "test_mem_data_table" will be placed
 .stringz "This is a zero-terminated character string"
+
+.include "other_stuff.asm" ; include (AT THIS POINT) the file "other_stuff.asm"

@@ -22,7 +22,8 @@ using namespace std;
  int  warning_cnt = 0;
 
  // function prototypes
- void convert_strings(char *input_file, const char *output_file);
+ void includer(char *main_file, const char *output);
+ void convert_strings(const char *input_file, const char *output_file);
  void pre_processor(const char *input_file, const char *output_file);
  int  conv_shift(char *input_string, int line);
  int  hexc_to_int(char input_char);
@@ -39,9 +40,110 @@ using namespace std;
  
  
 // *****************************************************************************************************************
+// Copy included files to main file
+// *****************************************************************************************************************
+void includer(char *main_file, const char *output_file){
+
+    FILE *input, *inc_file, *output;
+    char line_input[1024];
+    int  i = 0, j = 0;
+    char *cut_out;
+    char txt_string[256];
+    char buf_string[256];
+    char in_file_name[256];
+	bool found = false;
+	char ch;
+
+    // open input file
+    input = fopen(main_file, "r");
+    if(input == NULL){
+      printf("INCLUDER: Input file error!");
+      exit(1);
+    }
+
+    // open output file (main working file)
+    output = fopen(output_file, "w+");
+    if(output == NULL){
+      printf("INCLUDER: Main file error!");
+      exit(1);
+    }
+
+    // get line
+    while(fgets(line_input, 512, input) != NULL){
+
+      // clear working string
+      for(i=0; i<strlen(txt_string); i++)
+        txt_string[i] = '\0';
+      // clear working string
+      for(i=0; i<strlen(buf_string); i++)
+        buf_string[i] = '\0';
+      // clear file name string
+      for(i=0; i<strlen(in_file_name); i++)
+        in_file_name[i] = '\0';
+
+      // get line entry
+      cut_out = strtok(line_input, "\n");
+      if (cut_out != NULL)
+        sprintf(txt_string, "%s", cut_out);
+	  strcpy(buf_string, txt_string); // make a copy
+
+      // erase comments
+      for(i=0; i<strlen(txt_string); i++){
+        if (txt_string[i] == ';'){
+		  for(j=i; j<strlen(txt_string); i++)
+            txt_string[j] = '\0';
+		  break;
+		}
+      }
+
+	  // find include statement
+	  for (i=0; i<245; i++){
+	    if (txt_string[i] == '.'){
+		  if (((txt_string[i+1] == 'I') or (txt_string[i+1] == 'i')) and ((txt_string[i+2] == 'N') or (txt_string[i+2] == 'n')) and
+		      ((txt_string[i+3] == 'C') or (txt_string[i+3] == 'c')) and ((txt_string[i+4] == 'L') or (txt_string[i+4] == 'l')) and
+		      ((txt_string[i+5] == 'U') or (txt_string[i+5] == 'u')) and ((txt_string[i+6] == 'D') or (txt_string[i+6] == 'd')) and
+		      ((txt_string[i+7] == 'E') or (txt_string[i+7] == 'e')) and (txt_string[i+8] == ' ') and (txt_string[i+9] == '"')){
+			// copy file name
+			for (j=i; j<strlen(txt_string); j++){
+			  if (txt_string[j+10] == '"')
+			    break;
+			  in_file_name[j-i] = txt_string[j+10];
+			}
+			in_file_name[j-i] = '\0';
+			found = true;
+		  }
+	    }
+	  }
+
+	  if(found == true){ // include statement found!
+        // open to be included file
+		printf("Including file '%s' ...\n", in_file_name);
+        inc_file = fopen(in_file_name, "r");
+        if(inc_file == NULL){
+          printf("INCLUDER: Error loading file '%s'!\n", in_file_name);
+          exit(1);
+        }
+		// copy file
+		while ((ch = getc(inc_file)) != EOF)
+		  putc(ch, output);
+		fclose(inc_file);
+	  }
+	  else{ // copy data from main input file
+		strcat(buf_string, "\n");
+        fputs(buf_string, output);
+	  }
+
+	}
+
+    fclose(output);
+    fclose(input);
+}
+
+ 
+// *****************************************************************************************************************
 // Convert strings into data intialization
 // *****************************************************************************************************************
-void convert_strings(char *input_file, const char *output_file){
+void convert_strings(const char *input_file, const char *output_file){
 
     FILE *input, *output;
     char line_input[1024];
@@ -672,12 +774,13 @@ int find_offset(char *input_label, int line){
 	}
 
 	// out of reach?
-	if ((offset > 255) or (offset < -256)){
-	  printf("ERROR: Label <%s> out of reach (offset: %d)! (line %d)\n", input_label, offset, line);
-	  error_cnt++;
+	if (line != -1){ // marker: full 16-bit range
+	  if ((offset > 255) or (offset < -256)){
+	    printf("ERROR: Label <%s> out of reach (offset: %d bytes)! (line %d)\n", input_label, offset*2, line);
+	    error_cnt++;
+	  }
+      offset = offset & 511; // make it nine bit wide
 	}
-	
-    offset = offset & 511;
 
     return offset;
 }
@@ -768,7 +871,7 @@ int conv_imm(char *input, int max_val, int line){
 		  break;
 		}
 	  }
-	  imm = ((find_offset(temp, 0)-1)*2);
+	  imm = ((find_offset(temp, -1)-1)*2);
 	  goto skip_analysis;
 	}
 
@@ -844,9 +947,9 @@ int conv_imm(char *input, int max_val, int line){
 	  }
 	  else {
 	    if (extended == true)
-		  imm = (((find_offset(temp, 0)-1)*2) >> 16) & 255; // low immediate of 32-bit immediate
+		  imm = (((find_offset(temp, -1)-1)*2) >> 16) & 255; // low immediate of 32-bit immediate
 		else
-	      imm = ((find_offset(temp, 0)-1)*2) & 255; // low immediate
+	      imm = ((find_offset(temp, -1)-1)*2) & 255; // low immediate
 	  }
 	}
 	if ((input_string[0] == 'H') and (input_string[1] == 'I') and (input_string[2] == 'G') and (input_string[3] == 'H') and (input_string[4] == '[')){
@@ -868,9 +971,9 @@ int conv_imm(char *input, int max_val, int line){
 	  }
 	  else{
 	    if (extended == true)
-		  imm = (((find_offset(temp, 0)-1)*2) >> 24) & 255; // high immediate of 32-bit immediate
+		  imm = (((find_offset(temp, -1)-1)*2) >> 24) & 255; // high immediate of 32-bit immediate
 		else
-	      imm = (((find_offset(temp, 0)-1)*2) >> 8) & 255; // high immediate
+	      imm = (((find_offset(temp, -1)-1)*2) >> 8) & 255; // high immediate
 	  }
 	}
 
@@ -1400,14 +1503,15 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
 // *****************************************************************************************************************
 int main(int argc, char *argv[]){
 
-    printf("\nAtlas Project - Evaluation Assembler, Version 2013.05.08\n");
+    printf("\nAtlas Project - Evaluation Assembler, Version 2013.05.15\n");
     printf("by Stephan Nolting (stnolting@gmail.com), Hanover, Germany\n\n");
 
 	// pre_processor.asm - intermediate processing file
 	// init.vhd - vhdl memory initialization data block
 	// out.bin - binary program output for bootloader downloading
 
-	convert_strings(argv[1], "job.xasm"); // convert strings into direct memory inits
+	includer(argv[1], "included.xasm"); // include other files - copy them to work file
+	convert_strings("included.xasm", "job.xasm"); // convert strings into direct memory inits
     pre_processor("job.xasm", "pre_processor.asm"); // erase comments & empty lines & get definitions
     get_labels("pre_processor.asm"); // find and list labels
 	assemble("pre_processor.asm", "init.vhd", "out.bin"); // do the magic conversion
