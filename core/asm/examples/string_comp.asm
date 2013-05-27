@@ -1,6 +1,6 @@
 ; *************************************************************************************************
 ; Compare two character strings
-; 21th of March, 2013
+; 27th of May, 2013
 ; by Stephan Nolting
 ; *************************************************************************************************
 
@@ -27,6 +27,7 @@
 reset_vec:		b main
 x_int0_vec:		b x_int0_vec ; not used
 x_int1_vec:		b x_int1_vec ; not used
+cmd_err_vec:	b cmd_err_vec ; not used
 swi_vec:		b swi_vec ; not used
 
 

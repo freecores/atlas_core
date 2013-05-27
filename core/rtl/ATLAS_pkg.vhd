@@ -4,7 +4,7 @@
 -- #  All architecture configurations, options, signal    #
 -- #  definitions and components are listed here.         #
 -- # **************************************************** #
--- #  Last modified: 27.04.2013                           #
+-- #  Last modified: 27.05.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -45,12 +45,13 @@ package atlas_core_package is
 	constant branch_slots_en_c : boolean := false; -- use branch delay slots (highly experimental!!!)
 
 
-  -- Interrupt/Exception Vectors ------------------------------------------------------------
+  -- Interrupt/Exception Vectors (word-address) ---------------------------------------------
   -- -------------------------------------------------------------------------------------------
 	constant res_int_vec_c     : std_logic_vector(15 downto 0) := x"0000"; -- use boot address instead!
 	constant irq0_int_vec_c    : std_logic_vector(15 downto 0) := x"0001"; -- external int line 0 IRQ
 	constant irq1_int_vec_c    : std_logic_vector(15 downto 0) := x"0002"; -- external int line 1 IRQ
-	constant swi_int_vec_c     : std_logic_vector(15 downto 0) := x"0003"; -- software IRQ
+	constant cmd_err_int_vec_c : std_logic_vector(15 downto 0) := x"0003"; -- instruction/access error
+	constant swi_int_vec_c     : std_logic_vector(15 downto 0) := x"0004"; -- software IRQ
 
 
   -- Wishbone Bus Constants -----------------------------------------------------------------
@@ -162,36 +163,37 @@ package atlas_core_package is
 	constant ctrl_branch_c     : natural := 39; -- is branch operation
 	constant ctrl_link_c       : natural := 40; -- store old pc to lr
 	constant ctrl_syscall_c    : natural := 41; -- is a system call
-	constant ctrl_ctx_down_c   : natural := 42; -- go to user mode
-	constant ctrl_restsm_c     : natural := 43; -- restore saved mode
+	constant ctrl_cmd_err_c    : natural := 42; -- invalid/unauthorized operation
+	constant ctrl_ctx_down_c   : natural := 43; -- go to user mode
+	constant ctrl_restsm_c     : natural := 44; -- restore saved mode
 
 	-- Memory Access --
-	constant ctrl_mem_acc_c    : natural := 44; -- request d-mem access
-	constant ctrl_mem_wr_c     : natural := 45; -- write to d-mem
-	constant ctrl_mem_bpba_c   : natural := 46; -- use bypassed base address
-	constant ctrl_mem_daa_c    : natural := 47; -- use delayed address
+	constant ctrl_mem_acc_c    : natural := 45; -- request d-mem access
+	constant ctrl_mem_wr_c     : natural := 46; -- write to d-mem
+	constant ctrl_mem_bpba_c   : natural := 47; -- use bypassed base address
+	constant ctrl_mem_daa_c    : natural := 48; -- use delayed address
 
 	-- Coprocessor Access --
-	constant ctrl_cp_acc_c     : natural := 48; -- coprocessor operation
-	constant ctrl_cp_trans_c   : natural := 49; -- coprocessor data transfer
-	constant ctrl_cp_wr_c      : natural := 50; -- write to coprocessor
-	constant ctrl_cp_id_c      : natural := 51; -- coprocessor id bit
+	constant ctrl_cp_acc_c     : natural := 49; -- coprocessor operation
+	constant ctrl_cp_trans_c   : natural := 50; -- coprocessor data transfer
+	constant ctrl_cp_wr_c      : natural := 51; -- write to coprocessor
+	constant ctrl_cp_id_c      : natural := 52; -- coprocessor id bit
 
 	-- Multiply-and-Acuumulate Unit --
-	constant ctrl_use_mac_c    : natural := 52; -- use MAC unit
-	constant ctrl_load_mac_c   : natural := 53; -- load addition buffer for MAC
-	constant ctrl_use_offs_c   : natural := 54; -- use loaded offset
+	constant ctrl_use_mac_c    : natural := 53; -- use MAC unit
+	constant ctrl_load_mac_c   : natural := 54; -- load addition buffer for MAC
+	constant ctrl_use_offs_c   : natural := 55; -- use loaded offset
 
 --	-- EX Forwarding --
---	constant ctrl_a_ex_ma_fw_c : natural := 55; -- obsolete
---	constant ctrl_a_ex_wb_fw_c : natural := 56; -- obsolete
---	constant ctrl_b_ex_ma_fw_c : natural := 57; -- obsolete
---	constant ctrl_b_ex_wb_fw_c : natural := 58; -- obsolete
---	constant ctrl_c_ex_wb_fw_c : natural := 59; -- obsolete
+--	constant ctrl_a_ex_ma_fw_c : natural := 56; -- obsolete
+--	constant ctrl_a_ex_wb_fw_c : natural := 57; -- obsolete
+--	constant ctrl_b_ex_ma_fw_c : natural := 58; -- obsolete
+--	constant ctrl_b_ex_wb_fw_c : natural := 59; -- obsolete
+--	constant ctrl_c_ex_wb_fw_c : natural := 60; -- obsolete
 
 	-- Bus Size --
-	constant ctrl_width_c      : natural := 55; -- control bus size
---	constant ctrl_width_c      : natural := 60; -- obsolete
+	constant ctrl_width_c      : natural := 56; -- control bus size
+--	constant ctrl_width_c      : natural := 61; -- obsolete
 
 	-- Progress Redefinitions --
 	constant ctrl_wb_en_c      : natural := ctrl_rd_wb_c;   -- valid write back

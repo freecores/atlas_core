@@ -3,7 +3,7 @@
    <wave_state>
    </wave_state>
    <db_ref_list>
-      <db_ref path="N:/N/Atlas Processor/core/syn/syn_xilinx/processor_tb_isim_beh1.wdb" id="1" type="auto">
+      <db_ref path="N:/N/Atlas Processor/core/syn/syn_xilinx/processor_tb_isim_beh.wdb" id="1" type="auto">
          <top_modules>
             <top_module name="atlas_core_package" />
             <top_module name="numeric_std" />
@@ -12,7 +12,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="91" />
+   <WVObjectSize size="92" />
    <wvobject fp_name="divider11" type="divider">
       <obj_property name="label">Global Control</obj_property>
       <obj_property name="DisplayName">label</obj_property>
@@ -50,6 +50,11 @@
       <obj_property name="ElementShortName">int_req</obj_property>
       <obj_property name="ObjectShortName">int_req</obj_property>
    </wvobject>
+   <wvobject fp_name="/processor_tb/the_core_of_the_problem/processor_core/System_Reg/int_vector" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">int_vector[15:0]</obj_property>
+      <obj_property name="ObjectShortName">int_vector[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
    <wvobject fp_name="/processor_tb/the_core_of_the_problem/processor_core/System_Reg/sys_reg_pc" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">sys_reg_pc[15:0]</obj_property>
       <obj_property name="ObjectShortName">sys_reg_pc[15:0]</obj_property>
@@ -71,20 +76,20 @@
       <obj_property name="TextColor">230 230 230</obj_property>
    </wvobject>
    <wvobject fp_name="/processor_tb/the_core_of_the_problem/processor_core/Control_Spine/of_ctrl_bus_o" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">of_ctrl_bus_o[53:0]</obj_property>
-      <obj_property name="ObjectShortName">of_ctrl_bus_o[53:0]</obj_property>
+      <obj_property name="ElementShortName">of_ctrl_bus_o[55:0]</obj_property>
+      <obj_property name="ObjectShortName">of_ctrl_bus_o[55:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/processor_tb/the_core_of_the_problem/processor_core/Control_Spine/ex_ctrl_bus_o" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">ex_ctrl_bus_o[53:0]</obj_property>
-      <obj_property name="ObjectShortName">ex_ctrl_bus_o[53:0]</obj_property>
+      <obj_property name="ElementShortName">ex_ctrl_bus_o[55:0]</obj_property>
+      <obj_property name="ObjectShortName">ex_ctrl_bus_o[55:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/processor_tb/the_core_of_the_problem/processor_core/Control_Spine/ma_ctrl_bus_o" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">ma_ctrl_bus_o[53:0]</obj_property>
-      <obj_property name="ObjectShortName">ma_ctrl_bus_o[53:0]</obj_property>
+      <obj_property name="ElementShortName">ma_ctrl_bus_o[55:0]</obj_property>
+      <obj_property name="ObjectShortName">ma_ctrl_bus_o[55:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/processor_tb/the_core_of_the_problem/processor_core/Control_Spine/wb_ctrl_bus_o" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">wb_ctrl_bus_o[53:0]</obj_property>
-      <obj_property name="ObjectShortName">wb_ctrl_bus_o[53:0]</obj_property>
+      <obj_property name="ElementShortName">wb_ctrl_bus_o[55:0]</obj_property>
+      <obj_property name="ObjectShortName">wb_ctrl_bus_o[55:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/processor_tb/the_core_of_the_problem/processor_core/Control_Spine/of_ctrl_bus_o[0]" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">[0]</obj_property>

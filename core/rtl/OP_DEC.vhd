@@ -3,7 +3,7 @@
 -- # **************************************************** #
 -- #  OpCode decoding unit.                               #
 -- # **************************************************** #
--- #  Last modified: 08.05.2013                           #
+-- #  Last modified: 27.05.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -102,7 +102,7 @@ begin
 								CTRL_O(ctrl_ra_3_c) <= user_mode_c; -- load from user bank
 								CTRL_O(ctrl_rb_3_c) <= user_mode_c; -- load from user bank
 								if (M_FLAG_I = user_mode_c) then -- unauthorized access
-									CTRL_O(ctrl_syscall_c) <= '1'; -- access violation
+									CTRL_O(ctrl_cmd_err_c) <= '1'; -- access violation - cmd_err trap
 								end if;
 							end if;
 
@@ -111,7 +111,7 @@ begin
 							if (redundant_reg_v = '1') then -- user bank store
 								CTRL_O(ctrl_rd_3_c) <= user_mode_c; -- store to user bank
 								if (M_FLAG_I = user_mode_c) then -- unauthorized access
-									CTRL_O(ctrl_syscall_c) <= '1'; -- access violation
+									CTRL_O(ctrl_cmd_err_c) <= '1'; -- access violation - cmd_err trap
 								end if;
 							end if;
 
@@ -122,7 +122,7 @@ begin
 							--CTRL_O(ctrl_msr_am_0_c) <= INSTR_INT(5); -- not needed, redundant assignment!
 							if (INSTR_INT(3) = '0') then -- load from MSR
 								if (INSTR_INT(6 downto 5) /= "11") and (M_FLAG_I = user_mode_c) then
-									CTRL_O(ctrl_syscall_c) <= '1'; -- access violation
+									CTRL_O(ctrl_cmd_err_c) <= '1'; -- access violation - cmd_err trap
 								end if;
 								CTRL_O(ctrl_msr_rd_c) <= '1'; -- read msr
 								CTRL_O(ctrl_rd_wb_c)  <= '1'; -- re-enable write back
@@ -148,7 +148,7 @@ begin
 							if (INSTR_INT(3) = '0') then -- store to MSR
 								if ((M_FLAG_I = user_mode_c)   and (INSTR_INT(6 downto 5) /= "11")) or
 								   ((M_FLAG_I = system_mode_c) and (INSTR_INT(6) = '1') and (INSTR_INT(4) = '1')) then
-									CTRL_O(ctrl_syscall_c) <= '1'; -- access violation
+									CTRL_O(ctrl_cmd_err_c) <= '1'; -- access violation - cmd_err trap
 								end if;
 								if(MULTI_CYC_I = '0') then
 									CTRL_O(ctrl_msr_wr_c)    <= '1'; -- write msr
@@ -174,7 +174,7 @@ begin
 							CTRL_O(ctrl_rd_wb_c) <= '0'; -- disable write back
 							if (INSTR_INT(3) = '0') then -- store to PC
 								if ((M_FLAG_I = user_mode_c) and ((INSTR_INT(1 downto 0) /= "00") or (INSTR_INT(7) = '1'))) then
-									CTRL_O(ctrl_syscall_c) <= '1'; -- access violation
+									CTRL_O(ctrl_cmd_err_c) <= '1'; -- access violation - cmd_err trap
 								end if;
 								CTRL_O(ctrl_pc_wr_c)     <= '1'; -- write pc
 								CTRL_O(ctrl_rb_is_imm_c) <= '1'; -- this is an immediate
@@ -397,7 +397,7 @@ begin
 							if (M_FLAG_I = user_mode_c) then -- access violation?
 								if (((CP_PTC_I = '1') or (cp0_present_c = false)) and (INSTR_INT(10) = '0')) or -- usr cp access
 								   ((cp1_present_c = false) and (INSTR_INT(10) = '1')) then -- sys cp access
-									CTRL_O(ctrl_syscall_c) <= '1'; -- is system call (unauthorized/impossible cp_access)
+									CTRL_O(ctrl_cmd_err_c) <= '1'; -- access violation/undefined instruction - cmd_err trap
 								end if;
 							end if;
 
@@ -419,23 +419,23 @@ begin
 												CTRL_O(ctrl_use_mac_c)  <= '1'; -- use mac unit
 											end if;
 										else -- not present
-											CTRL_O(ctrl_syscall_c) <= '1'; -- is system call
+											CTRL_O(ctrl_cmd_err_c) <= '1'; -- invalid instruction - cmd_err trap
 										end if;
 									else -- MUL
 										if (build_mul_c = true) then -- unit present?
 											CTRL_O(ctrl_use_mac_c) <= '1'; -- use mac unit
 										else -- not present
-											CTRL_O(ctrl_syscall_c) <= '1'; -- is system call
+											CTRL_O(ctrl_cmd_err_c) <= '1'; -- invalid instruction - cmd_err trap
 										end if;
 									end if;
 
 								when "01" => -- Class 3c1: Undefined Insruction
 								-- --------------------------------------------------------------------------------
-									CTRL_O(ctrl_syscall_c) <= '1'; -- is system call
+									CTRL_O(ctrl_cmd_err_c) <= '1'; -- undefined instruction - cmd_err trap
 
 								when "10" => -- Class 3c2: Undefined Insruction
 								-- --------------------------------------------------------------------------------
-									CTRL_O(ctrl_syscall_c) <= '1'; -- is system call
+									CTRL_O(ctrl_cmd_err_c) <= '1'; -- undefined instruction - cmd_err trap
 
 								when others => -- Class 3c3: System Call with 10-bit tag
 								-- --------------------------------------------------------------------------------

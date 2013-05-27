@@ -871,7 +871,7 @@ int conv_imm(char *input, int max_val, int line){
 		  break;
 		}
 	  }
-	  imm = ((find_offset(temp, -1)-1)*2);
+	  imm = ((find_offset(temp, -1)-2)*2);
 	  goto skip_analysis;
 	}
 
@@ -947,9 +947,9 @@ int conv_imm(char *input, int max_val, int line){
 	  }
 	  else {
 	    if (extended == true)
-		  imm = (((find_offset(temp, -1)-1)*2) >> 16) & 255; // low immediate of 32-bit immediate
+		  imm = (((find_offset(temp, -1)-2)*2) >> 16) & 255; // low immediate of 32-bit immediate
 		else
-	      imm = ((find_offset(temp, -1)-1)*2) & 255; // low immediate
+	      imm = ((find_offset(temp, -1)-2)*2) & 255; // low immediate
 	  }
 	}
 	if ((input_string[0] == 'H') and (input_string[1] == 'I') and (input_string[2] == 'G') and (input_string[3] == 'H') and (input_string[4] == '[')){
@@ -971,9 +971,9 @@ int conv_imm(char *input, int max_val, int line){
 	  }
 	  else{
 	    if (extended == true)
-		  imm = (((find_offset(temp, -1)-1)*2) >> 24) & 255; // high immediate of 32-bit immediate
+		  imm = (((find_offset(temp, -1)-2)*2) >> 24) & 255; // high immediate of 32-bit immediate
 		else
-	      imm = (((find_offset(temp, -1)-1)*2) >> 8) & 255; // high immediate
+	      imm = (((find_offset(temp, -1)-2)*2) >> 8) & 255; // high immediate
 	  }
 	}
 
@@ -1503,7 +1503,7 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
 // *****************************************************************************************************************
 int main(int argc, char *argv[]){
 
-    printf("\nAtlas Project - Evaluation Assembler, Version 2013.05.15\n");
+    printf("\nAtlas Project - Evaluation Assembler, Version 2013.05.27\n");
     printf("by Stephan Nolting (stnolting@gmail.com), Hanover, Germany\n\n");
 
 	// pre_processor.asm - intermediate processing file

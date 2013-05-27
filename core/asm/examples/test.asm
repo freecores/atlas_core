@@ -35,6 +35,7 @@
 reset_vec:		b init          ; destination after reset, always starting in system mode
 x_int0_vec:		b x_int_handler ; external interrupt 0 interrupt handler
 x_int1_vec:		b x_int_handler ; external interrupt 1 interrupt handler
+cmd_err_vec:	b cmd_err_vec   ; undefined instruction / illegal msr/reg/cp access
 swi_vec:		b swi_handler   ; software interrupt exception handler
 
 

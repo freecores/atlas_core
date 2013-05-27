@@ -6,7 +6,7 @@
 -- #  processing circuits are implemented within this     #
 -- #  unit.                                               #
 -- # **************************************************** #
--- #  Last modified: 27.04.2013                           #
+-- #  Last modified: 27.05.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -122,13 +122,15 @@ begin
 			elsif ((xint1_valid_v = '1') and (XINT_SYNC(1) = '1')) then -- external interrupt 1
 				INT_REQ    <= '1';
 				INT_VECTOR <= irq1_int_vec_c;
-			elsif ((EXC_POS_I = '1') and (EX_CTRL_BUS_I(ctrl_syscall_c) = '1')) then
-			-- software interrupt: system call // msr/coprocessor access violation // undefined instruction
+			elsif ((EXC_POS_I = '1') and (EX_CTRL_BUS_I(ctrl_cmd_err_c) = '1')) then --  msr/reg/coprocessor access violation // undefined instruction
+				INT_REQ    <= '1';
+				INT_VECTOR <= cmd_err_int_vec_c;
+			elsif ((EXC_POS_I = '1') and (EX_CTRL_BUS_I(ctrl_syscall_c) = '1')) then -- software interrupt / system call
 				INT_REQ    <= '1';
 				INT_VECTOR <= swi_int_vec_c;
 			else -- no exception
 				INT_REQ    <= '0';
-				INT_VECTOR <= res_int_vec_c; -- irrelevant, use boot address config instaed!
+				INT_VECTOR <= res_int_vec_c; -- irrelevant
 			end if;
 		end process EXC_SYS;
 
@@ -231,7 +233,11 @@ begin
 
 					-- Exception PC Update --------------------------------------------------
 					if (INT_REQ = '1') then
-						SYS_REG_PC <= INT_VECTOR;
+						if (word_mode_en_c = false) then -- byte-addressed memory
+							SYS_REG_PC <= INT_VECTOR(14 downto 0) & '0';
+						else -- word-addressed memory
+							SYS_REG_PC <= INT_VECTOR;
+						end if;
 
 					-- Manual/Branch PC Update ----------------------------------------------
 					elsif (VALID_BRANCH = '1') or ((EX_CTRL_BUS_I(ctrl_en_c) = '1') and (EX_CTRL_BUS_I(ctrl_ctx_down_c) = '1')) then -- valid automatic/manual update/goto user mode
