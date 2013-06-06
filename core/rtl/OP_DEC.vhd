@@ -3,7 +3,7 @@
 -- # **************************************************** #
 -- #  OpCode decoding unit.                               #
 -- # **************************************************** #
--- #  Last modified: 27.05.2013                           #
+-- #  Last modified: 03.06.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -22,16 +22,16 @@ entity OP_DEC is
 -- ###############################################################################################
 
 				INSTR_I         : in  std_logic_vector(data_width_c-1 downto 0); -- instruction input
-				T_FLAG_I        : in  std_logic;                    -- T-Flag input
-				M_FLAG_I        : in  std_logic;                    -- Mode flag input
-				MULTI_CYC_I     : in  std_logic;                    -- multi-cycle indicator
-				CP_PTC_I        : in  std_logic;                    -- user coprocessor protection
+				T_FLAG_I        : in  std_logic; -- T-Flag input
+				M_FLAG_I        : in  std_logic; -- Mode flag input
+				MULTI_CYC_I     : in  std_logic; -- multi-cycle indicator
+				CP_PTC_I        : in  std_logic; -- user coprocessor protection
 
 -- ###############################################################################################
 -- ##           Decoder Interface Output                                                        ##
 -- ###############################################################################################
 
-				MULTI_CYC_REQ_O : out std_logic;                                 -- multi-cycle reqest
+				MULTI_CYC_REQ_O : out std_logic; -- multi-cycle reqest
 				CTRL_O          : out std_logic_vector(ctrl_width_c-1 downto 0); -- decoder ctrl lines
 				IMM_O           : out std_logic_vector(data_width_c-1 downto 0)  -- immediate
 			);
@@ -395,8 +395,8 @@ begin
 								CTRL_O(ctrl_rd_wb_c)    <= not INSTR_INT(3); -- allow write back
 							end if;
 							if (M_FLAG_I = user_mode_c) then -- access violation?
-								if (((CP_PTC_I = '1') or (cp0_present_c = false)) and (INSTR_INT(10) = '0')) or -- usr cp access
-								   ((cp1_present_c = false) and (INSTR_INT(10) = '1')) then -- sys cp access
+								if (((CP_PTC_I = '1')        or (cp0_present_c = false)) and (INSTR_INT(10) = '0')) or -- usr cp access
+								   (((cp1_protect_c = false) or (cp1_present_c = false)) and (INSTR_INT(10) = '1')) then -- sys cp access
 									CTRL_O(ctrl_cmd_err_c) <= '1'; -- access violation/undefined instruction - cmd_err trap
 								end if;
 							end if;

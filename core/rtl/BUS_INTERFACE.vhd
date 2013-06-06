@@ -6,7 +6,7 @@
 -- #  instruction cache. The system is capable of         #
 -- #  generating a true 32-bit wide address for the NoC.  #
 -- # **************************************************** #
--- #  Last modified: 03.04.2013                           #
+-- #  Last modified: 06.06.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -103,6 +103,8 @@ architecture BUS_INTERFACE_STRUCTURE of BUS_INTERFACE is
 	signal CACHE_RW                     : std_logic;                                           -- read/write (up/download, d-access)
 	signal MEM_REQ_FF                   : std_logic;                                           -- processor requires d-mem access
 	signal MEM_REQ_FF_FF                : std_logic;                                           -- processor requires d-mem access, signal buffer
+	signal MEM_RW_FF                    : std_logic;                                           -- processor requires write access
+	signal MEM_RW_FF_FF                 : std_logic;                                           -- processor requires write, signal buffer
 	signal INST_EN_FF                   : std_logic;                                           -- instruction reg enable ff
 	signal I_UPDATE                     : std_logic;                                           -- instruction reg enable
 	signal D_ACC_DAT_BUF                : std_logic_vector(data_width_c-1 downto 0);           -- data write buffer
@@ -160,6 +162,8 @@ begin
 					-- Processor --
 					MEM_REQ_FF      <= '0';
 					MEM_REQ_FF_FF   <= '0';
+					MEM_RW_FF       <= '0';
+					MEM_RW_FF_FF    <= '0';
 					D_ACC_DAT_BUF   <= (others => '0');
 					INST_EN_FF      <= '0';
 
@@ -200,7 +204,9 @@ begin
 							D_ACC_BUF     <= MEM_ADR_I;
 							D_ACC_DAT_BUF <= MEM_DAT_I;
 							MEM_REQ_FF    <= MEM_REQ_I;
+							MEM_RW_FF     <= MEM_RW_I;
 							MEM_REQ_FF_FF <= MEM_REQ_FF;
+							MEM_RW_FF_FF  <= MEM_RW_FF;
 							INST_EN_FF    <= INSTR_EN_I;
 						end if;
 
@@ -237,9 +243,9 @@ begin
 
 	-- Control Arbiter (Async) -----------------------------------------------------------------------------
 	-- --------------------------------------------------------------------------------------------------------
-		ARBITER_ASYNC: process(ARB_STATE, RET_STATE, DATA_CNT, PAGE_PNT, WB_ACK_CNT, D_PAGE_SELECT, DA_RB_FF, I_PAGE_SELECT, TYPE_FLAG, NEW_ENTRY_PAGE, PAGE_BASE_ADR, BUS_DIR, TIMEOUT_CNT, SYNC_CNT, -- arbiter signals
-		                       SYS_MODE_I, MEM_REQ_FF, MEM_REQ_FF_FF, MEM_ADR_I, MEM_DAT_I, MEM_RW_I, INST_EN_FF, INSTR_ADR_I, D_ACC_DAT_BUF, FREEZE_FLAG, I_ACC_BUF, D_ACC_BUF, DIR_DAT_REQ, INSTR_EN_I, CLR_CACHE_I, FLUSH_CACHE_I, -- processor signals
-		                       CACHE_I_MISS, CACHE_D_MISS, CACHE_DR_DATA, CA_ADR_BUF, VALID_FLAG, DIRTY_FLAG, PAGE_BASE_ADR, D_PAGE_BUF, I_PAGE_BUF, CACHE_SYNC, -- cache signals
+		ARBITER_ASYNC: process(ARB_STATE, RET_STATE, DATA_CNT, PAGE_PNT, WB_ACK_CNT, D_PAGE_SELECT, DA_RB_FF, I_PAGE_SELECT, TYPE_FLAG, NEW_ENTRY_PAGE, BUS_DIR, TIMEOUT_CNT, SYNC_CNT, -- arbiter signals
+		                       SYS_MODE_I, MEM_REQ_FF, MEM_REQ_FF_FF, MEM_ADR_I, MEM_DAT_I, MEM_RW_I, MEM_RW_FF_FF, INST_EN_FF, INSTR_ADR_I, D_ACC_DAT_BUF, FREEZE_FLAG, I_ACC_BUF, D_ACC_BUF, DIR_DAT_REQ, INSTR_EN_I, CLR_CACHE_I, FLUSH_CACHE_I, -- processor signals
+		                       CACHE_I_MISS, CACHE_D_MISS, CACHE_DR_DATA, CA_ADR_BUF, VALID_FLAG, DIRTY_FLAG, PAGE_BASE_ADR, D_PAGE_BUF, I_PAGE_BUF, CACHE_SYNC, DIRTY_FLAG_NXT, VALID_FLAG_NXT, -- cache signals
 		                       WB_ADR_BUF, WB_CYC_BUF, WB_STB_BUF, WB_ACK_I, WB_ACK_BUF, WB_DI_BUF, WB_DO_BUF) -- bus signals
 			variable modified_page_v : std_logic; -- assigned page is valid and dirty
 		begin
@@ -368,9 +374,14 @@ begin
 					CA_ADR_BUF_NXT(log2_cache_pages_c+log2_cache_page_size_c-1 downto log2_cache_page_size_c) <= PAGE_PNT;
 
 					-- Prepare transfer operation --
-					ARB_STATE_NXT  <= TRANSFER_PAGE;
-					RET_STATE_NXT  <= ANALYSE;
-					WB_CYC_BUF_NXT <= '1';
+					if (PAGE_PNT /= I_PAGE_BUF) and (PAGE_PNT /= D_PAGE_BUF) then
+						ARB_STATE_NXT  <= TRANSFER_PAGE;
+						RET_STATE_NXT  <= ANALYSE;
+						WB_CYC_BUF_NXT <= '1';
+						WB_STB_BUF_NXT <= '1';
+					else
+						PAGE_PNT_NXT <= NEW_ENTRY_PAGE;
+					end if;
 
 					-- Upload modified page? --
 					if (modified_page_v = '1') then
@@ -380,7 +391,6 @@ begin
 						WB_ADR_BUF_NXT(bus_adr_width_c-1 downto log2_cache_page_size_c+1) <= PAGE_BASE_ADR(to_integer(unsigned(PAGE_PNT)));
 					else -- download new page
 						BUS_DIR_NXT    <= DOWN; -- download new page
-						WB_STB_BUF_NXT <= '1';
 						if (TYPE_FLAG = '1') then -- new instruction page
 							WB_ADR_BUF_NXT <= I_ACC_BUF;
 							WB_ADR_BUF_NXT(log2_cache_page_size_c downto 0) <= (others => '0');
@@ -546,6 +556,10 @@ begin
 					CACHE_EN      <= '1';
 					CACHE_D_ADR   <= D_PAGE_BUF & D_ACC_BUF(log2_cache_page_size_c downto align_lsb_c);
 
+					-- WB Bus --
+					WB_CYC_BUF_NXT <= '0';
+					WB_STB_BUF_NXT <= '0';
+
 					-- Arbiter --
 					ARB_STATE_NXT <= RE_SYNC_2;
 
@@ -557,7 +571,7 @@ begin
 					CACHE_I_ADR     <= I_PAGE_BUF & I_ACC_BUF(log2_cache_page_size_c downto align_lsb_c);
 
 					-- D-Write Access --
-					CACHE_RW        <= '1';
+					CACHE_RW        <= MEM_RW_FF_FF;
 					CACHE_EN        <= MEM_REQ_FF_FF;
 					CACHE_D_ADR     <= D_PAGE_BUF & D_ACC_BUF(log2_cache_page_size_c downto align_lsb_c);
 					CACHE_DW_DATA   <= D_ACC_DAT_BUF;

@@ -6,7 +6,7 @@
 -- #  Base registers generate the most significant 16-bit #
 -- #  of a true 32-bit addressable system.                #
 -- # **************************************************** #
--- #  Last modified: 16.03.2013                           #
+-- #  Last modified: 05.06.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -75,11 +75,12 @@ architecture MMU_STRUCTURE of MMU is
 	signal MMU_D_PAGE_LINK      : std_logic_vector(15 downto 0); -- r7: data link page
 
 	-- Control register bits --
-	constant mmu_ctrl_cflush_c  : natural :=  0; -- w: flush cache
-	constant mmu_ctrl_cclr_c    : natural :=  1; -- w: clear cache
-	constant mmu_ctrl_da_c      : natural :=  2; -- r/w: direct access
-	constant mmu_ctrl_csync_c   : natural :=  3; -- r: cache is sync
-	constant mmu_ctrl_bus_err_c : natural :=  4; -- r/w bus error interrupt/ack
+	constant mmu_ctrl_cflush_c  : natural := 0; -- w: flush cache
+	constant mmu_ctrl_cclr_c    : natural := 1; -- w: clear cache
+	constant mmu_ctrl_da_c      : natural := 2; -- r/w: direct access
+	constant mmu_ctrl_csync_c   : natural := 3; -- r: cache is sync
+	constant mmu_ctrl_bus_err_c : natural := 4; -- r/w: bus error interrupt/ack
+	constant mmu_ctrl_ccx_en_c  : natural := 5; -- r/w: enable automatic page switch on irq
 
 	-- Commands --
 	-- applied on any register
@@ -106,8 +107,8 @@ begin
 					MMU_USR_D_PAGE  <= (others => '0');
 					MMU_I_PAGE_LINK <= (others => '0');
 					MMU_D_PAGE_LINK <= (others => '0');
-					MEM_IP_ADR_O    <= (others => '0');
-					MEM_DP_ADR_O    <= (others => '0');
+					MEM_IP_ADR_O    <= BOOT_PAGE_G;
+					MEM_DP_ADR_O    <= BOOT_PAGE_G;
 					CP_DAT_O        <= (others => '0');
 				elsif (HALT_I = '0') then
 
@@ -118,7 +119,7 @@ begin
 
 					-- Exception Processing ----------------------------------------------------------
 					-- ----------------------------------------------------------------------------------
-					if (INT_EXE_I = '1') then
+					if (INT_EXE_I = '1') and (MMU_CTRL(mmu_ctrl_ccx_en_c) = '1') then
 						MMU_SYS_I_PAGE              <= (others => '0');  -- i-page zero
 						MMU_SYS_D_PAGE              <= (others => '0');  -- d-page zero
 						MEM_IP_ADR_O                <= (others => '0');  -- i-page zero

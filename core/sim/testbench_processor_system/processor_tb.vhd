@@ -26,6 +26,7 @@ architecture processor_tb_structure of processor_tb is
 
 				-- Coprocesor Interface --
 				CP_EN_O         : out std_logic; -- access to cp0
+				CP_ICE_O        : out std_logic; -- cp interface enable
 				CP_OP_O         : out std_logic; -- data transfer/processing
 				CP_RW_O         : out std_logic; -- read/write access
 				CP_CMD_O        : out std_logic_vector(8 downto 0); -- register addresses / cmd
@@ -121,7 +122,7 @@ begin
 						-- Configuration --
 						UC_AREA_BEGIN_G => x"FF000000", -- begin of uncached area
 						UC_AREA_END_G   => x"FFFFFFFF", -- end of uncached area
-						BOOT_ADDRESS_G  => x"00000000"  -- boot address
+						BOOT_ADDRESS_G  => x"FFFF0000"  -- boot address, page 0xFFFF just for testing
 					)
 			port map (
 						-- Global Control --
@@ -130,6 +131,7 @@ begin
 
 						-- Coprocesor Interface --
 						CP_EN_O         => open,        -- access to cp0
+						CP_ICE_O        => open,        -- cp interface enable
 						CP_OP_O         => open,        -- data transfer/processing
 						CP_RW_O         => open,        -- read/write access
 						CP_CMD_O        => open,        -- register addresses / cmd

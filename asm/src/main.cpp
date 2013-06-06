@@ -35,7 +35,7 @@ using namespace std;
  int  find_offset(char *input_label, int line);
  int  conv_imm(char *input, int max_val, int line);
  void get_labels(const char *input_file);
- void assemble(const char *input_file, const char *output_file, const char *bin_output_file);
+ int  assemble(const char *input_file, const char *output_file, const char *bin_output_file);
  int  main(int argc, char *argv[]);
  
  
@@ -1057,7 +1057,7 @@ void get_labels(const char *input_file){
 // *****************************************************************************************************************
 // Assemble pre-processor file
 // *****************************************************************************************************************
-void assemble(const char *input_file, const char *output_file, const char *bin_output_file){
+int assemble(const char *input_file, const char *output_file, const char *bin_output_file){
 
     FILE *data_in, *data_out, *bin_data_out;
     char line_input[512];
@@ -1082,7 +1082,7 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
       printf("ASSEMBLE: Output file error_cnt!\n");
       exit(1);
     }
-    bin_data_out = fopen(bin_output_file, "w");
+    bin_data_out = fopen(bin_output_file, "wb");
     if(data_out == NULL){
       printf("ASSEMBLE: Binary output file error_cnt!\n");
       exit(1);
@@ -1153,7 +1153,7 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
       else if (strcmp(arg[0], "ADC") == 0)
         opcode = (3<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
       else if (strcmp(arg[0], "SUB") == 0){
-      	if (conv_reg(arg[2], line) == conv_reg(arg[3], line)) { printf("WARNING: Redundant SUB will result in NEG instruction! (line &d)\n", line); warning_cnt++;}
+      	if (conv_reg(arg[2], line) == conv_reg(arg[3], line)) { printf("WARNING: Redundant SUB will result in NEG instruction! (line %d)\n", line); warning_cnt++;}
         opcode = (4<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
       }
       else if (strcmp(arg[0], "NEG") == 0)
@@ -1165,13 +1165,13 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
       else if ((strcmp(arg[0], "CPX") == 0) or (strcmp(arg[0], "CPXS") == 0))
         opcode = (7<<10) | (1<<3) | (conv_reg(arg[1], line)<<4) | conv_reg(arg[2], line);
       else if (strcmp(arg[0], "AND") == 0){
-	    if (conv_reg(arg[2], line) == conv_reg(arg[3], line)) { printf("WARNING: Redundant AND will result in STUB instruction! (line &d)\n", line); warning_cnt++;}
+	    if (conv_reg(arg[2], line) == conv_reg(arg[3], line)) { printf("WARNING: Redundant AND will result in STUB instruction! (line %d)\n", line); warning_cnt++;}
         opcode = (8<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
 	  }
       else if (strcmp(arg[0], "STUB") == 0) // store register to user bank register
         opcode = (8<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[2], line);
       else if (strcmp(arg[0], "ORR") == 0){
-	    if (conv_reg(arg[2], line) == conv_reg(arg[3], line)) { printf("WARNING: Redundant ORR will result in LDUB instruction! (line &d)\n", line); warning_cnt++;}
+	    if (conv_reg(arg[2], line) == conv_reg(arg[3], line)) { printf("WARNING: Redundant ORR will result in LDUB instruction! (line %d)\n", line); warning_cnt++;}
         opcode = (9<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
 	  }
       else if (strcmp(arg[0], "LDUB") == 0) // load register from user bank register
@@ -1200,7 +1200,7 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
       else if (strcmp(arg[0], "ADCS") == 0)
         opcode = (3<<10) | (1<<3) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
       else if (strcmp(arg[0], "SUBS") == 0){
-      	if (conv_reg(arg[2], line) == conv_reg(arg[3], line)) { printf("WARNING: Redundant SUBS will result in NEG instruction! (line &d)\n", line); warning_cnt++;}
+      	if (conv_reg(arg[2], line) == conv_reg(arg[3], line)) { printf("WARNING: Redundant SUBS will result in NEG instruction! (line %d)\n", line); warning_cnt++;}
         opcode = (4<<10) | (1<<3) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
 		}
       else if (strcmp(arg[0], "NEGS") == 0)
@@ -1216,13 +1216,13 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
         opcode = (7<<10) | ((temp>>3)<<7) | (1<<6) | (conv_flag_op_2(arg[2], line)<<5) | (1<<4) | (temp & 7);
 	  }
       else if (strcmp(arg[0], "ANDS") == 0){
-	    if (conv_reg(arg[2], line) == conv_reg(arg[3], line)) { printf("WARNING: Redundant ANDS will result in STUBS instruction! (line &d)\n", line); warning_cnt++;}
+	    if (conv_reg(arg[2], line) == conv_reg(arg[3], line)) { printf("WARNING: Redundant ANDS will result in STUBS instruction! (line %d)\n", line); warning_cnt++;}
         opcode = (8<<10) | (1<<3) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
 	  }
       else if (strcmp(arg[0], "STUBS") == 0) // store register to user bank register and set flags
         opcode = (8<<10) | (1<<3) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[2], line);
       else if (strcmp(arg[0], "ORRS") == 0){
-	    if (conv_reg(arg[2], line) == conv_reg(arg[3], line)) { printf("WARNING: Redundant ORRS will result in LDUBS instruction! (line &d)\n", line); warning_cnt++;}
+	    if (conv_reg(arg[2], line) == conv_reg(arg[3], line)) { printf("WARNING: Redundant ORRS will result in LDUBS instruction! (line %d)\n", line); warning_cnt++;}
         opcode = (9<<10) | (1<<3) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | conv_reg(arg[3], line);
 	  }
       else if (strcmp(arg[0], "LDUBS") == 0) // load register from user bank register and set flags
@@ -1481,9 +1481,9 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
 	    // init file output
 	    sprintf(tmp_string, "%06d => x\"%04x\", -- %s\n", line-1, opcode, arg[0]);
         fputs(tmp_string, data_out);
-	    // data file output
-	    fputc(char(opcode>>8), bin_data_out);
-	    fputc(char(opcode & 255), bin_data_out);
+	    // binary data file output
+	    fputc(char((opcode>>8)&255), bin_data_out);
+	    fputc(char(opcode&255),      bin_data_out);
       }
 
       line++;
@@ -1495,6 +1495,8 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
     fclose(bin_data_out);
     fclose(data_out);
     fclose(data_in);
+	
+	return line;
 }
 
 
@@ -1503,7 +1505,9 @@ void assemble(const char *input_file, const char *output_file, const char *bin_o
 // *****************************************************************************************************************
 int main(int argc, char *argv[]){
 
-    printf("\nAtlas Project - Evaluation Assembler, Version 2013.05.27\n");
+	int p_size = 0;
+
+    printf("\nAtlas Project - Evaluation Assembler, Version 2013.05.31\n");
     printf("by Stephan Nolting (stnolting@gmail.com), Hanover, Germany\n\n");
 
 	// pre_processor.asm - intermediate processing file
@@ -1514,10 +1518,11 @@ int main(int argc, char *argv[]){
 	convert_strings("included.xasm", "job.xasm"); // convert strings into direct memory inits
     pre_processor("job.xasm", "pre_processor.asm"); // erase comments & empty lines & get definitions
     get_labels("pre_processor.asm"); // find and list labels
-	assemble("pre_processor.asm", "init.vhd", "out.bin"); // do the magic conversion
+	p_size = assemble("pre_processor.asm", "init.vhd", "out.bin"); // do the magic conversion
 
 	if (error_cnt == 0){
 	  printf("\nAssembler completed without errors (%d warnings).\n", warning_cnt);
+	  printf("Final program size: %d bytes\n", (p_size-1)*2);
 	  if (warning_cnt != 0)
 	    printf("Line numbers refer to the intermediate \"pre_processor.asm\" processing file.\n");
     }

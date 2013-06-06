@@ -3,7 +3,7 @@
 -- # **************************************************** #
 -- #  Wishbone-compatible demo memory.                    #
 -- # **************************************************** #
--- #  Last modified: 01.04.2013                           #
+-- #  Last modified: 02.06.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -53,7 +53,7 @@ architecture TEST_MEM_STRUCTURE of TEST_MEM is
 	------------------------------------------------------
 	signal MEM_FILE : MEM_FILE_TYPE :=
 	(
-		-- This is where you have to place the "init.vhd" file content --
+		others => x"0000" -- This is where you have to place the "init.vhd" file content --
 	);
 	------------------------------------------------------
 
@@ -66,12 +66,11 @@ begin
 			if rising_edge(WB_CLK_I) then
 
 				--- Data Read/Write ---
-				if (WB_STB_I = '1') then
+				if (WB_STB_I = '1') and (WB_CYC_I = '1') then
 					if (WB_WE_I = '1') then
 						MEM_FILE(to_integer(unsigned(WB_ADR_I(LOG2_MEM_SIZE downto 1)))) <= WB_DATA_I;
-					else
-						WB_DATA_INT <= MEM_FILE(to_integer(unsigned(WB_ADR_I(LOG2_MEM_SIZE downto 1))));
 					end if;
+					WB_DATA_INT <= MEM_FILE(to_integer(unsigned(WB_ADR_I(LOG2_MEM_SIZE downto 1))));
 				end if;
 
 				--- ACK Control ---

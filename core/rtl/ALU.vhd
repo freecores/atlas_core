@@ -4,7 +4,7 @@
 -- #  The main data processing is done here. Also the CP  #
 -- #  interface emerges from this unit.                   #
 -- # **************************************************** #
--- #  Last modified: 13.05.2013                           #
+-- #  Last modified: 02.06.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -367,7 +367,7 @@ begin
 				if (RST_I = '1') then
 					MAC_BUF <= (others => '0');
 				elsif (CE_I = '1') then
-					if (EX_CTRL_BUS_I(ctrl_load_mac_c) = '1') and (EX_CTRL_BUS_I(ctrl_en_c) = '1') then -- load mac buffer
+					if (EX_CTRL_BUS_I(ctrl_load_mac_c) = '1') and (EX_CTRL_BUS_I(ctrl_en_c) = '1') and (build_mac_c = true) then -- load mac buffer
 						MAC_BUF <= OP_C_I;
 					else
 						MAC_BUF <= (others => '0');
@@ -417,9 +417,9 @@ begin
 		CP_OP_O     <= EX_CTRL_BUS_I(ctrl_cp_trans_c); -- data transfer / cp operation
 		CP_DAT_O    <= OP_A_INT; -- data output
 		CP_RW_O     <= EX_CTRL_BUS_I(ctrl_cp_wr_c); -- read/write transfer
-		CP_CMD_O(cp_op_a_msb_c downto cp_op_a_lsb_c) <= EX_CTRL_BUS_I(ctrl_cp_rd_2_c  downto ctrl_cp_rd_0_c);  -- cp destination / op A reg
-		CP_CMD_O(cp_op_b_msb_c downto cp_op_b_lsb_c) <= EX_CTRL_BUS_I(ctrl_cp_ra_2_c  downto ctrl_cp_ra_0_c);  -- cp op B reg
-		CP_CMD_O(cp_cmd_msb_c  downto cp_cmd_lsb_c)  <= EX_CTRL_BUS_I(ctrl_cp_cmd_2_c downto ctrl_cp_cmd_0_c); -- cp command
+		CP_CMD_O(cp_op_a_msb_c downto cp_op_a_lsb_c) <= EX_CTRL_BUS_I(ctrl_cp_rd_2_c  downto ctrl_cp_rd_0_c)  when (EX_CTRL_BUS_I(ctrl_cp_acc_c) = '1') else (others => '0');  -- cp destination / op A reg
+		CP_CMD_O(cp_op_b_msb_c downto cp_op_b_lsb_c) <= EX_CTRL_BUS_I(ctrl_cp_ra_2_c  downto ctrl_cp_ra_0_c)  when (EX_CTRL_BUS_I(ctrl_cp_acc_c) = '1') else (others => '0');  -- cp op B reg
+		CP_CMD_O(cp_cmd_msb_c  downto cp_cmd_lsb_c)  <= EX_CTRL_BUS_I(ctrl_cp_cmd_2_c downto ctrl_cp_cmd_0_c) when (EX_CTRL_BUS_I(ctrl_cp_acc_c) = '1') else (others => '0'); -- cp command
 
 		-- Data Output --
 		MSR_DATA_O  <= OP_B_INT;    -- MSR write data

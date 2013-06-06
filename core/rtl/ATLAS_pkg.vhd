@@ -4,7 +4,7 @@
 -- #  All architecture configurations, options, signal    #
 -- #  definitions and components are listed here.         #
 -- # **************************************************** #
--- #  Last modified: 27.05.2013                           #
+-- #  Last modified: 03.06.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -18,8 +18,9 @@ package atlas_core_package is
   -- Architecture Configuration -------------------------------------------------------------
   -- -------------------------------------------------------------------------------------------
     constant big_endian_c           : boolean := false; -- use little/big endian memory system
-	constant cp0_present_c          : boolean := false; -- coprocessor 0 (usr cp) present?
+	constant cp0_present_c          : boolean := true;  -- coprocessor 0 (usr cp) present?
 	constant cp1_present_c          : boolean := true;  -- coprocessor 1 (sys cp) present?
+	constant cp1_protect_c          : boolean := true;  -- coprocessor 1 only accessible in sys mode
 	constant build_mul_c            : boolean := true;  -- build a dedicated MUL unit
 	constant build_mac_c            : boolean := false; -- build a dedicated MAC unit
 	constant ldil_sign_ext_c        : boolean := true;  -- use sign extension when loading low byte

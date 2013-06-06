@@ -6,7 +6,7 @@
 -- #  compatible bus unit incorporating a cache and a     #
 -- #  memory management unit, implemented as system CP.   #
 -- # **************************************************** #
--- #  Last modified: 09.03.2013                           #
+-- #  Last modified: 06.06.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -39,6 +39,7 @@ entity ATLAS_PROCESSOR is
 -- ###############################################################################################
 
 				CP_EN_O         : out std_logic; -- access to cp0
+				CP_ICE_O        : out std_logic; -- cp interface enable
 				CP_OP_O         : out std_logic; -- data transfer/processing
 				CP_RW_O         : out std_logic; -- read/write access
 				CP_CMD_O        : out std_logic_vector(8 downto 0); -- register addresses / cmd
@@ -152,8 +153,14 @@ begin
 						EXT_INT_1_I     => SYS_IRQ     -- internal interrupt
 					);
 
-		-- Coprocessor Data Read-Back --
+		-- Coprocessor Interface --
+		CP_EN_O    <= USR_CP_EN;
+		CP_OP_O    <= CP_OP;
+		CP_RW_O    <= CP_RW;
+		CP_CMD_O   <= CP_CMD;
+		CP_DAT_O   <= CP_W_DATA;
 		CP_DATA_RB <= SYS_CP_DRB or CP_DAT_I;
+		CP_ICE_O   <= not HALT;
 
 
 

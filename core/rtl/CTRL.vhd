@@ -4,7 +4,7 @@
 -- #  Main control system, generating control signals     #
 -- #  for each pipeline stage.                            #
 -- # **************************************************** #
--- #  Last modified: 14.03.2013                           #
+-- #  Last modified: 06.06.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -111,7 +111,7 @@ begin
 					MULTI_CYC_FF <= MULTI_CYC_REQ_I;
 					if (VALID_BRANCH_I = '1') then
 						DIS_CYCLE_FF <= '1'; -- one additional cycle for branches and system / ext interrupts
-					elsif (DIS_CYCLE_FF = '1') then
+					elsif (DIS_CYCLE_FF = '1') and (MULTI_CYC_REQ_I = '0') then -- hold when multi-cycle op required
 						DIS_CYCLE_FF <= '0';
 					end if;
 				end if;
