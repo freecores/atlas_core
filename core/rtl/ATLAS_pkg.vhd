@@ -4,7 +4,7 @@
 -- #  All architecture configurations, options, signal    #
 -- #  definitions and components are listed here.         #
 -- # **************************************************** #
--- #  Last modified: 03.06.2013                           #
+-- #  Last modified: 25.06.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -25,7 +25,7 @@ package atlas_core_package is
 	constant build_mac_c            : boolean := false; -- build a dedicated MAC unit
 	constant ldil_sign_ext_c        : boolean := true;  -- use sign extension when loading low byte
 	constant log2_cache_pages_c     : natural := 2;     -- address bits to specify number of cache pages, max 5
-	constant log2_cache_page_size_c : natural := 5;     -- address bits to specify cache page size (in words)
+	constant log2_cache_page_size_c : natural := 7;     -- address bits to specify cache page size (in words)
 	constant max_bus_latency_c      : natural := (2**log2_cache_page_size_c)/2; -- max wb bus cycle latency
 	constant word_mode_en_c         : boolean := false; -- use word-addressed memory system instead of byte-addressed
 
@@ -60,7 +60,7 @@ package atlas_core_package is
 	constant wb_classic_cyc_c  : std_logic_vector(2 downto 0) := "000"; -- classic cycle
 	constant wb_con_bst_cyc_c  : std_logic_vector(2 downto 0) := "001"; -- constant address burst
 	constant wb_inc_bst_cyc_c  : std_logic_vector(2 downto 0) := "010"; -- incrementing address burst
-	constant wb_end_cyc_cyc_c  : std_logic_vector(2 downto 0) := "111"; -- burst end
+	constant wb_end_bst_cyc_c  : std_logic_vector(2 downto 0) := "111"; -- burst end
 
 
   -- Machine Status Register ----------------------------------------------------------------

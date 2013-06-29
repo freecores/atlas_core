@@ -132,6 +132,7 @@ void includer(char *main_file, const char *output_file){
 		strcat(buf_string, "\n");
         fputs(buf_string, output);
 	  }
+	  found = false;
 
 	}
 
@@ -1507,7 +1508,7 @@ int main(int argc, char *argv[]){
 
 	int p_size = 0;
 
-    printf("\nAtlas Project - Evaluation Assembler, Version 2013.05.31\n");
+    printf("\nAtlas Project - Evaluation Assembler, Version 2013.06.20\n");
     printf("by Stephan Nolting (stnolting@gmail.com), Hanover, Germany\n\n");
 
 	// pre_processor.asm - intermediate processing file

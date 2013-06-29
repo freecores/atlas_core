@@ -6,7 +6,7 @@
 -- #  instruction cache. The system is capable of         #
 -- #  generating a true 32-bit wide address for the NoC.  #
 -- # **************************************************** #
--- #  Last modified: 06.06.2013                           #
+-- #  Last modified: 25.06.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -104,7 +104,6 @@ architecture BUS_INTERFACE_STRUCTURE of BUS_INTERFACE is
 	signal MEM_REQ_FF                   : std_logic;                                           -- processor requires d-mem access
 	signal MEM_REQ_FF_FF                : std_logic;                                           -- processor requires d-mem access, signal buffer
 	signal MEM_RW_FF                    : std_logic;                                           -- processor requires write access
-	signal MEM_RW_FF_FF                 : std_logic;                                           -- processor requires write, signal buffer
 	signal INST_EN_FF                   : std_logic;                                           -- instruction reg enable ff
 	signal I_UPDATE                     : std_logic;                                           -- instruction reg enable
 	signal D_ACC_DAT_BUF                : std_logic_vector(data_width_c-1 downto 0);           -- data write buffer
@@ -163,7 +162,6 @@ begin
 					MEM_REQ_FF      <= '0';
 					MEM_REQ_FF_FF   <= '0';
 					MEM_RW_FF       <= '0';
-					MEM_RW_FF_FF    <= '0';
 					D_ACC_DAT_BUF   <= (others => '0');
 					INST_EN_FF      <= '0';
 
@@ -206,7 +204,6 @@ begin
 							MEM_REQ_FF    <= MEM_REQ_I;
 							MEM_RW_FF     <= MEM_RW_I;
 							MEM_REQ_FF_FF <= MEM_REQ_FF;
-							MEM_RW_FF_FF  <= MEM_RW_FF;
 							INST_EN_FF    <= INSTR_EN_I;
 						end if;
 
@@ -243,8 +240,8 @@ begin
 
 	-- Control Arbiter (Async) -----------------------------------------------------------------------------
 	-- --------------------------------------------------------------------------------------------------------
-		ARBITER_ASYNC: process(ARB_STATE, RET_STATE, DATA_CNT, PAGE_PNT, WB_ACK_CNT, D_PAGE_SELECT, DA_RB_FF, I_PAGE_SELECT, TYPE_FLAG, NEW_ENTRY_PAGE, BUS_DIR, TIMEOUT_CNT, SYNC_CNT, -- arbiter signals
-		                       SYS_MODE_I, MEM_REQ_FF, MEM_REQ_FF_FF, MEM_ADR_I, MEM_DAT_I, MEM_RW_I, MEM_RW_FF_FF, INST_EN_FF, INSTR_ADR_I, D_ACC_DAT_BUF, FREEZE_FLAG, I_ACC_BUF, D_ACC_BUF, DIR_DAT_REQ, INSTR_EN_I, CLR_CACHE_I, FLUSH_CACHE_I, -- processor signals
+		ARBITER_ASYNC: process(ARB_STATE, RET_STATE, DATA_CNT, PAGE_PNT, WB_ACK_CNT, D_PAGE_SELECT, DA_RB_FF, I_PAGE_SELECT, TYPE_FLAG, NEW_ENTRY_PAGE, BUS_DIR, TIMEOUT_CNT, SYNC_CNT, MEM_RW_FF, -- arbiter signals
+		                       SYS_MODE_I, MEM_REQ_FF, MEM_REQ_FF_FF, MEM_ADR_I, MEM_DAT_I, MEM_RW_I, INST_EN_FF, INSTR_ADR_I, D_ACC_DAT_BUF, FREEZE_FLAG, I_ACC_BUF, D_ACC_BUF, DIR_DAT_REQ, INSTR_EN_I, CLR_CACHE_I, FLUSH_CACHE_I, -- processor signals
 		                       CACHE_I_MISS, CACHE_D_MISS, CACHE_DR_DATA, CA_ADR_BUF, VALID_FLAG, DIRTY_FLAG, PAGE_BASE_ADR, D_PAGE_BUF, I_PAGE_BUF, CACHE_SYNC, DIRTY_FLAG_NXT, VALID_FLAG_NXT, -- cache signals
 		                       WB_ADR_BUF, WB_CYC_BUF, WB_STB_BUF, WB_ACK_I, WB_ACK_BUF, WB_DI_BUF, WB_DO_BUF) -- bus signals
 			variable modified_page_v : std_logic; -- assigned page is valid and dirty
@@ -464,7 +461,7 @@ begin
 							DATA_CNT_NXT   <= std_logic_vector(unsigned(DATA_CNT) + 1); -- inc data counter
 							WB_STB_BUF_NXT <= '1'; -- strobe data
 						else
-							WB_CTI_O       <= wb_end_cyc_cyc_c;
+							WB_CTI_O       <= wb_end_bst_cyc_c;
 							WB_STB_BUF_NXT <= '0'; -- no more new strobes
 						end if;
 						-- Accept Data --
@@ -485,7 +482,7 @@ begin
 							CACHE_EN       <= '1'; -- enable data read from cache
 							CA_ADR_BUF_NXT <= std_logic_vector(unsigned(CA_ADR_BUF) + 1); -- inc cache address pointer
 						else
-							WB_CTI_O       <= wb_end_cyc_cyc_c;
+							WB_CTI_O       <= wb_end_bst_cyc_c;
 							WB_STB_BUF_NXT <= '0'; -- no more new strobes
 						end if;
 					end if;
@@ -515,14 +512,18 @@ begin
 					end if;
 					if (to_integer(unsigned(TIMEOUT_CNT)) > max_bus_latency_c) then
 						ARB_STATE_NXT <= RE_SYNC_1;
+						WB_CYC_BUF_NXT <= '0';
 						ERROR_O <= '1'; -- error!
 					end if;
 
 
 				when DIRECT_ACCESS => -- direct memory access
 				-------------------------------------------------------------------------------
-					-- Data flow --
+					-- WB Bus --
 					WB_CTI_O <= wb_classic_cyc_c;
+					WB_STB_BUF_NXT <= '1';
+
+					-- Data flow --
 					if (WB_ACK_I = '1') then
 						ARB_STATE_NXT   <= IDLE;
 						FREEZE_FLAG_NXT <= '0';
@@ -545,6 +546,8 @@ begin
 					end if;
 					if (to_integer(unsigned(TIMEOUT_CNT)) > max_bus_latency_c) then
 						ARB_STATE_NXT <= IDLE;
+						WB_CYC_BUF_NXT <= '0';
+						WB_STB_BUF_NXT <= '0';
 						ERROR_O <= '1'; -- error!
 					end if;
 
@@ -555,6 +558,11 @@ begin
 					CACHE_RW      <= '0';
 					CACHE_EN      <= '1';
 					CACHE_D_ADR   <= D_PAGE_BUF & D_ACC_BUF(log2_cache_page_size_c downto align_lsb_c);
+
+					-- Modified Cache Page --
+					if ((MEM_REQ_FF_FF and MEM_RW_FF) = '1') and (RET_STATE /= FLUSH) then
+						DIRTY_FLAG_NXT(to_integer(unsigned(D_PAGE_BUF))) <= '1'; -- page is dirty now
+					end if;
 
 					-- WB Bus --
 					WB_CYC_BUF_NXT <= '0';
@@ -571,7 +579,7 @@ begin
 					CACHE_I_ADR     <= I_PAGE_BUF & I_ACC_BUF(log2_cache_page_size_c downto align_lsb_c);
 
 					-- D-Write Access --
-					CACHE_RW        <= MEM_RW_FF_FF;
+					CACHE_RW        <= MEM_RW_FF;
 					CACHE_EN        <= MEM_REQ_FF_FF;
 					CACHE_D_ADR     <= D_PAGE_BUF & D_ACC_BUF(log2_cache_page_size_c downto align_lsb_c);
 					CACHE_DW_DATA   <= D_ACC_DAT_BUF;
@@ -593,8 +601,12 @@ begin
 			if rising_edge(CLK_I) then
 				if (RST_I = '1') then
 					RND_GEN <= (others => '0');
-				else--if (FREEZE_FLAG = '0') and (ARB_STATE = IDLE) then
-					RND_GEN <= RND_GEN(4 downto 0) & (RND_GEN(5) xnor RND_GEN(4));
+				else--elsif (FREEZE_FLAG = '0') and (ARB_STATE = IDLE) then
+					if (RND_GEN = "111111") then
+						RND_GEN <= RND_GEN(4 downto 0) & '0';
+					else
+						RND_GEN <= RND_GEN(4 downto 0) & (RND_GEN(5) xnor RND_GEN(4));
+					end if;
 				end if;
 			end if;
 		end process PAGE_RANDOM_GEN;
@@ -655,7 +667,7 @@ begin
 		CACHE_MEM_ACCESS: process(CLK_I)
 		begin
 			if rising_edge(CLK_I) then
-				if (CACHE_EN = '1') then -- valid data access
+				if (CACHE_EN = '1') and (WB_HALT_I = '0') then -- valid data access
 					if (CACHE_RW = '1') then -- cache data write access
 						CACHE_MEM(to_integer(unsigned(CACHE_D_ADR(log2_cache_pages_c+log2_cache_page_size_c-1 downto 0)))) <= CACHE_DW_DATA; -- word address!
 					end if;

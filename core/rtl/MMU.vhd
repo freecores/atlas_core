@@ -110,7 +110,7 @@ begin
 					MEM_IP_ADR_O    <= BOOT_PAGE_G;
 					MEM_DP_ADR_O    <= BOOT_PAGE_G;
 					CP_DAT_O        <= (others => '0');
-				elsif (HALT_I = '0') then
+				else--if (HALT_I = '0') then
 
 					-- Defaults --
 					CP_DAT_O <= (others => '0');
