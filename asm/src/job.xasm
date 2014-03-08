@@ -1,0 +1,397 @@
+
+
+
+
+
+
+
+
+
+
+
+
+.EQU SYS0_CORE    C0
+.EQU COM0_CORE    C2
+.EQU LR           R7 
+
+
+
+
+
+
+RESET_VEC:
+		B RESET
+
+X_INT0_VEC:
+		B ERR_HANDLER
+
+X_INT1_VEC:
+		B ERR_HANDLER
+
+CMD_ERR_VEC:
+	B ERR_HANDLER
+
+SWI_VEC:
+		B ERR_HANDLER
+
+
+
+
+
+
+
+ERR_HANDLER:
+		BL    UART_LINEBREAK
+
+					LDIL  R2, LOW[ERR_STRING]
+					LDIH  R2, HIGH[ERR_STRING]
+					BL    UART_PRINT
+					BL    UART_LINEBREAK
+					B     #+0						
+
+
+
+
+
+
+RESET:
+		
+
+			LDIL  R2, LOW[STRING_INTRO]
+			LDIH  R2, HIGH[STRING_INTRO]
+			BL    UART_PRINT_BR
+
+RESTART:
+	
+
+			LDIL  R2, LOW[STRING_SEED]
+			LDIH  R2, HIGH[STRING_SEED]
+			BL    UART_PRINT
+			BL    RECEIVE_HEX_WORD
+			MCR   #1, SYS0_CORE, R4, #5				
+			BL    UART_LINEBREAK
+
+			
+			LDIL  R2, LOW[STRING_TAPS]
+			LDIH  R2, HIGH[STRING_TAPS]
+			BL    UART_PRINT
+			BL    RECEIVE_HEX_WORD
+			CBR   R4, R4, #15						
+			MCR   #1, SYS0_CORE, R4, #6				
+			BL    UART_LINEBREAK
+
+			
+FOREVER:
+	LDIL  R1, #'0'
+
+			BL    UART_SENDBYTE
+			LDIL  R1, #'x'
+			BL    UART_SENDBYTE
+
+			
+			MRC   #1, R4, SYS0_CORE, #5			
+			BL    PRINT_HEX_STRING
+			BL    UART_LINEBREAK
+
+			
+			MRC   #1, R0, COM0_CORE, #0				
+			STB   R0, #15							
+			BTS   RESTART
+
+			
+			B     FOREVER
+
+
+
+
+
+
+
+
+
+
+
+
+UART_PRINT_BR:
+
+
+
+			LDIL  R3, #0XFF
+			MOV   R4, LR
+			B     UART_PRINT_LOOP
+
+
+
+
+
+
+
+UART_PRINT:
+
+
+
+			CLR   R3
+			MOV   R4, LR
+			
+UART_PRINT_LOOP:
+
+
+			LDR   R0, R2, +#1, POST, !				
+			LDIL  R1, #0X00							
+			LDIH  R1, #0XFF
+			AND   R1, R0, R1
+			SFTS  R1, R1, #SWP						
+			BEQ   UART_PRINT_LOOP_END
+			BL    UART_SENDBYTE
+			B     UART_PRINT_LOOP
+
+UART_PRINT_LOOP_END:
+
+
+			MOV   LR, R4
+			TEQ   R3, R3							
+			RBAEQ LR
+
+
+
+
+
+
+
+
+UART_LINEBREAK:
+
+
+
+			MOV   R2, LR
+			LDIL  R1, #0X0D							
+			BL    UART_SENDBYTE
+			LDIL  R1, #0X0A							
+			MOV   LR, R2
+
+
+
+
+
+
+
+
+UART_SENDBYTE:
+
+
+
+			MRC  #1, R0, COM0_CORE, #2				
+			STB  R0, #5								
+			BTS  UART_SENDBYTE						
+			MCR  #1, COM0_CORE, R1, #0				
+			RET  LR
+
+
+
+
+
+
+
+UART_RECEIVEBYTE:
+
+
+
+			MRC   #1, R0, COM0_CORE, #0				
+			STBI  R0, #15							
+			BTS   UART_RECEIVEBYTE					
+			LDIH  R0, #0X00							
+			RET   LR
+
+
+
+
+
+
+
+
+RECEIVE_HEX_WORD:
+
+
+
+			MOV   R2, LR							
+			LDIL  R4, #0							
+			LDIL  R3, #4							
+
+RECEIVE_HEX_WORD_LOOP:
+
+
+			BL    UART_RECEIVEBYTE					
+
+			
+			LDIL  R1, #'F'
+			CMP   R0, R1
+			BMI   #+3								
+			LDIL  R1, #32							
+			SUB   R0, R0, R1
+
+			
+			LDIL  R1, #'0'
+			CMP   R0, R1
+			BMI   RECEIVE_HEX_WORD_LOOP				
+
+			LDIL  R1, #'F'
+			CMP   R1, R0
+			BMI   RECEIVE_HEX_WORD_LOOP				
+
+			LDIL  R1, #'9'
+			CMP   R1, R0
+			BLS   RECEIVE_HEX_WORD_ECHO				
+
+			LDIL  R1, #'A'
+			CMP   R0, R1
+			BHI   RECEIVE_HEX_WORD_LOOP				
+
+			
+RECEIVE_HEX_WORD_ECHO:
+
+
+			MOV   R1, R0
+			BL    UART_SENDBYTE
+
+			
+			LDIL  R0, #'0'
+			SUB   R1, R1, R0
+			LDIL  R0, #9
+			CMP   R0, R1
+			BLS   #+2								
+			DEC   R1, R1, #7						
+
+			
+			SFT   R4, R4, #ROL
+			SFT   R4, R4, #ROL
+			SFT   R4, R4, #ROL
+			SFT   R4, R4, #ROL
+			ORR   R4, R4, R1
+
+			
+			DECS  R3, R3, #1
+			BNE   RECEIVE_HEX_WORD_LOOP
+
+			RET   R2								
+
+
+
+
+
+
+
+
+PRINT_HEX_STRING:
+
+
+
+			MOV   R6, LR							
+
+			
+			SFT   R2, R4, #ROL
+			SFT   R2, R2, #ROL
+			SFT   R2, R2, #ROL
+			SFT   R2, R2, #ROL
+			BL    CONV_HEX_COMP
+			BL    UART_SENDBYTE
+
+			
+			SFT   R2, R4, #SWP
+			BL    CONV_HEX_COMP
+			BL    UART_SENDBYTE
+
+			
+			SFT   R2, R4, #LSR
+			SFT   R2, R2, #LSR
+			SFT   R2, R2, #LSR
+			SFT   R2, R2, #LSR
+			BL    CONV_HEX_COMP
+			BL    UART_SENDBYTE
+
+			
+			MOV   R2, R4
+			BL    CONV_HEX_COMP
+			BL    UART_SENDBYTE
+
+			RET   R6
+
+
+CONV_HEX_COMP:
+	LDIL R1, #0X0F					
+
+				AND  R2, R2, R1
+
+				LDIL R1, #9
+				CMP  R1, R2
+				BCS  #+3
+
+				LDIL R1, #48					
+				B    #+2
+				LDIL R1, #55					
+				ADD  R1, R1, R2					
+				RET  LR
+
+
+
+
+
+
+
+ERR_STRING:
+.dw #17784
+.dw #25445
+.dw #28788
+.dw #26991
+.dw #28207
+.dw #26990
+.dw #29797
+.dw #29298
+.dw #30064
+.dw #29728
+.dw #25970
+.dw #29295
+.dw #29217
+.dw #0
+STRING_INTRO:
+.dw #21089
+.dw #28260
+.dw #28525
+.dw #8270
+.dw #30061
+.dw #25189
+.dw #29216
+.dw #18277
+.dw #28261
+.dw #29281
+.dw #29807
+.dw #29184
+STRING_SEED:
+.dw #17774
+.dw #29797
+.dw #29216
+.dw #19526
+.dw #21330
+.dw #8307
+.dw #25957
+.dw #25632
+.dw #10292
+.dw #26725
+.dw #30761
+.dw #14880
+.dw #12408
+.dw #0
+STRING_TAPS:
+.dw #17774
+.dw #29797
+.dw #29216
+.dw #19526
+.dw #21330
+.dw #8308
+.dw #24944
+.dw #29472
+.dw #10292
+.dw #26725
+.dw #30761
+.dw #14880
+.dw #12408
+.dw #0
