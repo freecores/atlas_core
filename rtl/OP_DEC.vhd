@@ -3,7 +3,7 @@
 -- # **************************************************** #
 -- #  OpCode decoding unit.                               #
 -- # **************************************************** #
--- #  Last modified: 15.02.2014                           #
+-- #  Last modified: 23.03.2014                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -411,9 +411,9 @@ begin
 
 						when "10" => -- Class 3c: Coprocessor Access
 						-- --------------------------------------------------------------------------------
-							CTRL_O(ctrl_cp_acc_c) <= '1'; -- this is a cp access
+							CTRL_O(ctrl_cp_acc_c)   <= '1'; -- this is a cp access
+                            CTRL_O(ctrl_cp_trans_c) <= INSTR_INT(11); -- data transfer/access
 							if (INSTR_INT(11) = '1') then -- data transfer
-								CTRL_O(ctrl_cp_trans_c) <= '1'; -- this is a cp data transfer
 								CTRL_O(ctrl_cp_wr_c)    <= INSTR_INT(3); -- read / write
 								CTRL_O(ctrl_rd_wb_c)    <= not INSTR_INT(3); -- allow write back
 							end if;
@@ -456,8 +456,12 @@ begin
 								when "01" => -- Class 3c1: Special (Sleep, Reg-based branch)
 								-- --------------------------------------------------------------------------------
 									if (INSTR_INT(9) = '0') then -- SLEEP mode
-										CTRL_O(ctrl_sleep_c)    <= '1'; -- go to sleep
-									elsif (reg_branches_en_c = true) then -- register-based branch
+                                        if (M_FLAG_I = user_mode_c) then -- access violation?
+                                            CTRL_O(ctrl_cmd_err_c) <= '1'; -- access violation - cmd_err trap
+                                        else
+                                            CTRL_O(ctrl_sleep_c)   <= '1'; -- go to sleep
+                                        end if;
+									elsif (reg_branches_en_c = true) then -- register-based branches enabled
 										CTRL_O(ctrl_cond_3_c   downto ctrl_cond_0_c)   <= INSTR_INT(6 downto 3); -- branch condition
 										CTRL_O(ctrl_rd_3_c     downto ctrl_rd_0_c)     <= M_FLAG_I & link_reg_adr_c; -- link register
 										CTRL_O(ctrl_alu_fs_2_c downto ctrl_alu_fs_0_c) <= alu_adc_c; -- add offset (without carry)
@@ -472,9 +476,18 @@ begin
 									end if;
 
 
-								when "10" => -- Class 3c2: Undefined Instruction
+								when "10" => -- Class 3c2: Conditional MOVE = if (COND=TRUE) then Rd <= Rb
 								-- --------------------------------------------------------------------------------
-									CTRL_O(ctrl_cmd_err_c) <= '1'; -- undefined instruction - cmd_err trap
+                                    if (cond_moves_en_c = true) then -- conditional moves enabled
+                                        CTRL_O(ctrl_cond_3_c   downto ctrl_cond_0_c)   <= INSTR_INT(6 downto 3); -- branch condition
+                                        CTRL_O(ctrl_alu_fs_2_c downto ctrl_alu_fs_0_c) <= alu_orr_c; -- logical OR
+                                        CTRL_O(ctrl_rd_wb_c)   <= '1'; -- allow write back
+                                        CTRL_O(ctrl_clr_la_c)  <= '1'; -- set low byte of A to 0
+                                        CTRL_O(ctrl_clr_ha_c)  <= '1'; -- set high byte of A to 0
+                                        CTRL_O(ctrl_cond_wb_c) <= '1'; -- is conditional write back
+									else
+										CTRL_O(ctrl_cmd_err_c)  <= '1'; -- undefined instruction - cmd_err trap
+									end if;
 
 
 								when others => -- Class 3c3: System Call with 10-bit tag

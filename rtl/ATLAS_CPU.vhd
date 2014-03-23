@@ -4,7 +4,7 @@
 -- #  This is the top entity of the CPU core.             #
 -- #  All submodules are instantiated here.               #
 -- # **************************************************** #
--- #  Last modified: 25.01.2014                           #
+-- #  Last modified: 23.03.2014                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -118,6 +118,7 @@ architecture ATLAS_CPU_BEHAV of ATLAS_CPU is
 	signal WAKE_UP_CALL  : std_logic; -- wake up from sleep
 	signal MODE          : std_logic; -- current operating mode
 	signal MODE_FF       : std_logic; -- delayed current operating mode
+    signal COND_TRUE     : std_logic; -- condition is true
 
 	-- Opcode Decoder --
 	signal OP_CTRL       : std_logic_vector(ctrl_width_c-1 downto 0); -- decoder contorl output
@@ -181,6 +182,7 @@ begin
 						WB_CTRL_BUS_O   => WB_CTRL,        -- wb stage control
 
 						-- Function Control --
+                        COND_TRUE_I     => COND_TRUE,      -- condition is true
 						VALID_BRANCH_I  => VALID_BRANCH,   -- valid branch detected
 						EXC_TAKEN_I     => EXC_TAKEN,      -- excation execute
 						WAKE_UP_I       => WAKE_UP_CALL,   -- wake up from sleep
@@ -222,6 +224,7 @@ begin
 						PC_O            => INSTR_ADR_O,    -- pc output
 						PC_1D_O         => PC_1D,          -- pc 1x delayed
 						CP_PTC_O        => CP_PTC,         -- coprocessor protection
+                        COND_TRUE_O     => COND_TRUE,      -- condition is true
 						MODE_O          => MODE,           -- current mode
 						MODE_FF_O       => MODE_FF         -- delayed current mode
 					);

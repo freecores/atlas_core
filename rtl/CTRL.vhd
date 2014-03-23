@@ -4,7 +4,7 @@
 -- #  Main control system, generating control signals     #
 -- #  for each pipeline stage.                            #
 -- # **************************************************** #
--- #  Last modified: 25.01.2014                           #
+-- #  Last modified: 23.03.2014                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -49,6 +49,7 @@ entity CTRL is
 -- ##           Function Control                                                                ##
 -- ###############################################################################################
 
+                COND_TRUE_I     : in  std_logic; -- condition is true
 				VALID_BRANCH_I  : in  std_logic; -- valid branch detected
 				EXC_TAKEN_I     : in  std_logic; -- exception taken
 				WAKE_UP_I       : in  std_logic; -- wake up from sleep
@@ -253,8 +254,8 @@ begin
 					-- some pre-processing to shorten critical path --
 					if (VALID_BRANCH_I = '0') and (EX_CTRL_BUF(ctrl_branch_c) = '1') then -- unfullfilled branch
 						MA_CTRL_FF(ctrl_wb_en_c) <= EXC_TAKEN_I; -- IRQs may process anyway
-					else
-						MA_CTRL_FF(ctrl_wb_en_c) <= (EX_CTRL_BUF(ctrl_en_c) and EX_CTRL_BUF(ctrl_rd_wb_c)) or EXC_TAKEN_I; -- valid reg data write-back
+					else -- valid reg data write-back and true condition for cond- write back or Exception taken
+						MA_CTRL_FF(ctrl_wb_en_c) <= (EX_CTRL_BUF(ctrl_en_c) and EX_CTRL_BUF(ctrl_rd_wb_c) and (EX_CTRL_BUF(ctrl_cond_wb_c) nand (not COND_TRUE_I))) or EXC_TAKEN_I;
 					end if;
 					MA_CTRL_FF(ctrl_rd_cp_acc_c) <=  EX_CTRL_BUF(ctrl_cp_acc_c) and (not EX_CTRL_BUF(ctrl_cp_wr_c)); -- cp read-back
 					MA_CTRL_FF(ctrl_cp_msr_rd_c) <= (EX_CTRL_BUF(ctrl_cp_acc_c) and (not EX_CTRL_BUF(ctrl_cp_wr_c))) or (EX_CTRL_BUF(ctrl_msr_rd_c)); -- cp or msr read access

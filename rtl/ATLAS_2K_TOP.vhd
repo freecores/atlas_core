@@ -4,7 +4,7 @@
 -- #  This is the top entity oth ATLAS 2k processor.      #
 -- #  See the core's data sheet for more information.     #
 -- # **************************************************** #
--- #  Last modified: 08.03.2014                           #
+-- #  Last modified: 22.03.2014                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -84,7 +84,23 @@ entity ATLAS_2K_TOP is
 				SYS_IN_I        : in  std_logic_vector(07 downto 0); -- system input
 
 				-- IRQs --
-				IRQ_I           : in  std_logic_vector(01 downto 0)  -- IRQs
+				IRQ_I           : in  std_logic_vector(01 downto 0); -- IRQs
+
+-- ###############################################################################################
+-- ##          Wishbone Bus                                                                     ##
+-- ###############################################################################################
+
+                WB_CLK_O        : out std_logic; -- bus clock
+                WB_RST_O        : out std_logic; -- bus reset, sync, high active
+				WB_ADR_O        : out std_logic_vector(31 downto 0); -- address
+				WB_SEL_O        : out std_logic_vector(01 downto 0); -- byte select
+				WB_DATA_O       : out std_logic_vector(15 downto 0); -- data out
+				WB_DATA_I       : in  std_logic_vector(15 downto 0); -- data in
+				WB_WE_O         : out std_logic; -- read/write
+				WB_CYC_O        : out std_logic; -- cycle enable
+				WB_STB_O        : out std_logic; -- strobe
+				WB_ACK_I        : in  std_logic; -- acknowledge
+                WB_ERR_I        : in  std_logic  -- bus error
 			);
 end ATLAS_2K_TOP;
 
@@ -241,7 +257,20 @@ begin
 						SYS_IN_I        => SYS_IN_I,       -- system parallel input
 
 						-- IRQ Lines --
-						IRQ_I           => IRQ_I           -- external IRQs
+						IRQ_I           => IRQ_I,          -- external IRQs
+
+                        -- Wishbone Bus --
+                        WB_CLK_O        => WB_CLK_O,       -- bus clock
+                        WB_RST_O        => WB_RST_O,       -- bus reset, sync, high active
+                        WB_ADR_O        => WB_ADR_O,       -- address
+                        WB_SEL_O        => WB_SEL_O,       -- byte select
+                        WB_DATA_O       => WB_DATA_O,      -- data out
+                        WB_DATA_I       => WB_DATA_I,      -- data in
+                        WB_WE_O         => WB_WE_O,        -- read/write
+                        WB_CYC_O        => WB_CYC_O,       -- cycle enable
+                        WB_STB_O        => WB_STB_O,       -- strobe
+                        WB_ACK_I        => WB_ACK_I,       -- acknowledge
+                        WB_ERR_I        => WB_ERR_I        -- bus error
 					);
 
 

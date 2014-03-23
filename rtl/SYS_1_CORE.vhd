@@ -4,7 +4,7 @@
 -- #  -> Memory Management Unit                            #
 -- #  -> Clock Information                                 #
 -- # ***************************************************** #
--- #  Last modified: 24.01.2014                            #
+-- #  Last modified: 22.03.2014                            #
 -- # ***************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany            #
 -- #########################################################
@@ -85,17 +85,17 @@ begin
 		begin
 			if rising_edge(CLK_I) then
 				if (RST_I = '1') then
-					MMU_IRQ_BASE    <= boot_page_c; -- (others => '0');
-					MMU_SYS_I_PAGE  <= boot_page_c;
-					MMU_SYS_D_PAGE  <= boot_page_c;
-					MMU_USR_I_PAGE  <= boot_page_c; -- (others => '0');
-					MMU_USR_D_PAGE  <= boot_page_c; -- (others => '0');
-					MMU_I_PAGE_LINK <= boot_page_c; -- (others => '0');
-					MMU_D_PAGE_LINK <= boot_page_c; -- (others => '0');
-					I_SYS_TMP       <= boot_page_c;
-					D_SYS_TMP       <= boot_page_c;
-					I_USR_TMP       <= boot_page_c; -- (others => '0');
-					D_USR_TMP       <= boot_page_c; -- (others => '0');
+					MMU_IRQ_BASE    <= start_page_c; -- (others => '0');
+					MMU_SYS_I_PAGE  <= start_page_c;
+					MMU_SYS_D_PAGE  <= start_page_c;
+					MMU_USR_I_PAGE  <= start_page_c; -- (others => '0');
+					MMU_USR_D_PAGE  <= start_page_c; -- (others => '0');
+					MMU_I_PAGE_LINK <= start_page_c; -- (others => '0');
+					MMU_D_PAGE_LINK <= start_page_c; -- (others => '0');
+					I_SYS_TMP       <= start_page_c;
+					D_SYS_TMP       <= start_page_c;
+					I_USR_TMP       <= start_page_c; -- (others => '0');
+					D_USR_TMP       <= start_page_c; -- (others => '0');
 					MODE_BUF        <= system_mode_c & system_mode_c; -- start in system mode
 				elsif (ICE_I = '1') then
 

@@ -1660,6 +1660,41 @@ int assemble(const char *input_file, const char *output_file, const char *bin_ou
       else if (strcmp(arg[0], ".DW") == 0) // memory init
 	     opcode = conv_imm(arg[1], (int)(pow(2,16)-1), line);
 
+	  // Conditional move instructions
+	  // ---------------------------------------------------------------------------------------------------------
+      else if (strcmp(arg[0], "MVEQ") == 0)
+		opcode = (62<<10) | (conv_reg(arg[1], line)<<7) | ( 0<<3) | (conv_reg(arg[2], line)<<0);
+      else if (strcmp(arg[0], "MVNE") == 0)
+		opcode = (62<<10) | (conv_reg(arg[1], line)<<7) | ( 1<<3) | (conv_reg(arg[2], line)<<0);
+      else if (strcmp(arg[0], "MVCS") == 0)
+		opcode = (62<<10) | (conv_reg(arg[1], line)<<7) | ( 2<<3) | (conv_reg(arg[2], line)<<0);
+      else if (strcmp(arg[0], "MVCC") == 0)
+		opcode = (62<<10) | (conv_reg(arg[1], line)<<7) | ( 3<<3) | (conv_reg(arg[2], line)<<0);
+      else if (strcmp(arg[0], "MVMI") == 0)
+		opcode = (62<<10) | (conv_reg(arg[1], line)<<7) | ( 4<<3) | (conv_reg(arg[2], line)<<0);
+      else if (strcmp(arg[0], "MVPL") == 0)
+		opcode = (62<<10) | (conv_reg(arg[1], line)<<7) | ( 5<<3) | (conv_reg(arg[2], line)<<0);
+      else if (strcmp(arg[0], "MVOS") == 0)
+		opcode = (62<<10) | (conv_reg(arg[1], line)<<7) | ( 6<<3) | (conv_reg(arg[2], line)<<0);
+      else if (strcmp(arg[0], "MVOC") == 0)
+		opcode = (62<<10) | (conv_reg(arg[1], line)<<7) | ( 7<<3) | (conv_reg(arg[2], line)<<0);
+      else if (strcmp(arg[0], "MVHI") == 0)
+		opcode = (62<<10) | (conv_reg(arg[1], line)<<7) | ( 8<<3) | (conv_reg(arg[2], line)<<0);
+      else if (strcmp(arg[0], "MVLS") == 0)
+		opcode = (62<<10) | (conv_reg(arg[1], line)<<7) | ( 9<<3) | (conv_reg(arg[2], line)<<0);
+      else if (strcmp(arg[0], "MVGE") == 0)
+		opcode = (62<<10) | (conv_reg(arg[1], line)<<7) | (10<<3) | (conv_reg(arg[2], line)<<0);
+      else if (strcmp(arg[0], "MVLT") == 0)
+		opcode = (62<<10) | (conv_reg(arg[1], line)<<7) | (11<<3) | (conv_reg(arg[2], line)<<0);
+      else if (strcmp(arg[0], "MVGT") == 0)
+		opcode = (62<<10) | (conv_reg(arg[1], line)<<7) | (12<<3) | (conv_reg(arg[2], line)<<0);
+      else if (strcmp(arg[0], "MVLE") == 0)
+		opcode = (62<<10) | (conv_reg(arg[1], line)<<7) | (13<<3) | (conv_reg(arg[2], line)<<0);
+      else if (strcmp(arg[0], "MVTS") == 0)
+		opcode = (62<<10) | (conv_reg(arg[1], line)<<7) | (14<<3) | (conv_reg(arg[2], line)<<0);
+      else if ((strcmp(arg[0], "MV") == 0) or (strcmp(arg[0], "MVAL") == 0))
+		opcode = (62<<10) | (conv_reg(arg[1], line)<<7) | (15<<3) | (conv_reg(arg[2], line)<<0);
+
 	  // Unknown Command
 	  // ---------------------------------------------------------------------------------------------------------
 	  else {
@@ -1723,7 +1758,7 @@ int main(int argc, char *argv[]){
 	int p_size = 0;
 	int i = 0;
 
-    printf("ATLAS 2k Assembler, Version 2014.03.06\n");
+    printf("ATLAS 2k Assembler, Version 2014.03.23\n");
     printf("by Stephan Nolting (stnolting@gmail.com), Hanover, Germany\n");
     printf("www.opencores.org/project,atlas_core\n\n");
 

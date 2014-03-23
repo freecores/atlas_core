@@ -45,7 +45,7 @@ architecture INT_RAM_STRUCTURE of INT_RAM is
 	signal MEM_FILE : int_mem_file_t;   -- use this for implementation
 --	signal MEM_FILE : int_mem_file_t := -- use this for simulation only
 --	(
---		others => x"0000" -- replace this with simulation memory content
+--        others => x"0000"  -- NOP
 --	);
 --	======================================================================
 

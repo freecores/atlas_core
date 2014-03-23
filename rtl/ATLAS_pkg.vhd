@@ -4,7 +4,7 @@
 -- #  All architecture configurations, options, signal    #
 -- #  definitions and components are listed here.         #
 -- # **************************************************** #
--- #  Last modified: 01.02.2014                           #
+-- #  Last modified: 23.03.2014                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -21,6 +21,7 @@ package atlas_core_package is
 	constant build_mul_c       : boolean := true;  -- build a dedicated MUL unit
 	constant build_mac_c       : boolean := false; -- build a dedicated MAC unit
 	constant word_mode_en_c    : boolean := false; -- use word-addressed memory system instead of byte-addressed
+    constant wb_fifo_size_c    : natural := 32; -- Wishbone fifo size in words (power of 2!)
 
 	---- DO NOT CHANGE ANYTHING BELOW UNLESS YOU REALLY KNOW WHAT YOU ARE DOING! ----
 
@@ -33,11 +34,14 @@ package atlas_core_package is
 	constant stack_pnt_adr_c   : std_logic_vector(02 downto 0) := "110"; -- stack pointer
 	constant boot_page_c       : std_logic_vector(15 downto 0) := x"8000"; -- boot pages begin
 	constant boot_adr_c        : std_logic_vector(15 downto 0) := x"0000"; -- boot address
+	constant start_page_c      : std_logic_vector(15 downto 0) := boot_page_c; -- start page
+	constant start_adr_c       : std_logic_vector(15 downto 0) := boot_adr_c; -- start address
 	constant user_mode_c       : std_logic := '0'; -- user mode indicator
 	constant system_mode_c     : std_logic := '1'; -- system mode indicator
 	constant branch_slots_en_c : boolean := false; -- use branch delay slots (highly experimental!!!)
 	constant ldil_sign_ext_c   : boolean := true;  -- use sign extension when loading low byte
 	constant reg_branches_en_c : boolean := true;  -- synthesize register-based branches
+    constant cond_moves_en_c   : boolean := true;  -- synthesize conditional moves
 
 
   -- Interrupt/Exception Vectors (word-address) ---------------------------------------------
@@ -178,16 +182,19 @@ package atlas_core_package is
 	-- Sleep command --
 	constant ctrl_sleep_c      : natural := 52; -- go to sleep
 
+    -- Conditional write back --
+    constant ctrl_cond_wb_c    : natural := 53; -- is cond write back?
+
 --	-- EX Forwarding --
---	constant ctrl_a_ex_ma_fw_c : natural := 53; -- obsolete
---	constant ctrl_a_ex_wb_fw_c : natural := 54; -- obsolete
---	constant ctrl_b_ex_ma_fw_c : natural := 55; -- obsolete
---	constant ctrl_b_ex_wb_fw_c : natural := 56; -- obsolete
---	constant ctrl_c_ex_wb_fw_c : natural := 57; -- obsolete
+--	constant ctrl_a_ex_ma_fw_c : natural := 54; -- obsolete
+--	constant ctrl_a_ex_wb_fw_c : natural := 55; -- obsolete
+--	constant ctrl_b_ex_ma_fw_c : natural := 56; -- obsolete
+--	constant ctrl_b_ex_wb_fw_c : natural := 57; -- obsolete
+--	constant ctrl_c_ex_wb_fw_c : natural := 58; -- obsolete
 
 	-- Bus Size --
-	constant ctrl_width_c      : natural := 53; -- control bus size
---	constant ctrl_width_c      : natural := 58; -- obsolete
+	constant ctrl_width_c      : natural := 54; -- control bus size
+--	constant ctrl_width_c      : natural := 59; -- obsolete
 
 	-- Progress Redefinitions --
 	constant ctrl_wb_en_c      : natural := ctrl_rd_wb_c;   -- valid write back
@@ -408,6 +415,7 @@ package atlas_core_package is
 				PC_O            : out std_logic_vector(data_width_c-1 downto 0); -- pc output
 				PC_1D_O         : out std_logic_vector(data_width_c-1 downto 0); -- pc 1x delayed
 				CP_PTC_O        : out std_logic; -- user coprocessor protection
+                COND_TRUE_O     : out std_logic; -- condition is true
 				MODE_O          : out std_logic; -- current operating mode
 				MODE_FF_O       : out std_logic  -- delayed current mode
 			);
@@ -495,6 +503,7 @@ package atlas_core_package is
 				WB_CTRL_BUS_O   : out std_logic_vector(ctrl_width_c-1 downto 0); -- wb stage control
 
 				-- Function Control --
+                COND_TRUE_I     : in  std_logic; -- condition is true
 				VALID_BRANCH_I  : in  std_logic; -- valid branch detected
 				EXC_TAKEN_I     : in  std_logic; -- exception taken
 				WAKE_UP_I       : in  std_logic; -- wake up from sleep
@@ -631,16 +640,50 @@ package atlas_core_package is
 				UART_RX_IRQ_O   : out std_logic; -- UART IRQ "data available"
 				UART_TX_IRQ_O   : out std_logic; -- UART IRQ "sending done"
 				SPI_IRQ_O       : out std_logic; -- SPI IRQ "transfer done"
+				PIO_IRQ_O       : out std_logic; -- PIO input pin change irq
 
 				-- IO Interface --
 				UART_TXD_O      : out std_logic; -- UART serial output
 				UART_RXD_I      : in  std_logic; -- UART serial input
-				SPI_MOSI_O      : out std_logic; -- serial data out
-				SPI_MISO_I      : in  std_logic; -- serial data in
-				SPI_SCK_O       : out std_logic; -- serial clock out
-				SPI_CS_O        : out std_logic_vector(15 downto 0); -- chip select (low active)
+				SPI_MOSI_O      : out std_logic_vector(07 downto 0); -- serial data out
+				SPI_MISO_I      : in  std_logic_vector(07 downto 0); -- serial data in
+				SPI_SCK_O       : out std_logic_vector(07 downto 0); -- serial clock out
+				SPI_CS_O        : out std_logic_vector(07 downto 0); -- chip select (low active)
 				PIO_IN_I        : in  std_logic_vector(15 downto 0); -- parallel input
-				PIO_OUT_O       : out std_logic_vector(15 downto 0)  -- parallel output
+				PIO_OUT_O       : out std_logic_vector(15 downto 0); -- parallel output
+				SYS_IO_I        : in  std_logic_vector(07 downto 0); -- system input
+				SYS_IO_O        : out std_logic_vector(07 downto 0)  -- system output
+			);
+  end component;
+
+  -- Component: Communication Controller Core 1 ---------------------------------------------
+  -- -------------------------------------------------------------------------------------------
+  component COM_1_CORE
+	port	(
+				-- Host Interface --
+				CLK_I           : in  std_logic; -- global clock line
+				RST_I           : in  std_logic; -- global reset line, sync, high-active
+				ICE_I           : in  std_logic; -- interface clock enable, high-active
+				W_EN_I          : in  std_logic; -- write enable
+				R_EN_I          : in  std_logic; -- read enable
+                CMD_EXE_I       : in  std_logic; -- execute command
+				ADR_I           : in  std_logic_vector(02 downto 0); -- access address/command
+				DAT_I           : in  std_logic_vector(15 downto 0); -- write data
+				DAT_O           : out std_logic_vector(15 downto 0); -- read data
+                IRQ_O           : out std_logic; -- interrupt request
+
+                -- Wishbone Bus --
+                WB_CLK_O        : out std_logic; -- bus clock
+                WB_RST_O        : out std_logic; -- bus reset, sync, high active
+				WB_ADR_O        : out std_logic_vector(31 downto 0); -- address
+				WB_SEL_O        : out std_logic_vector(01 downto 0); -- byte select
+				WB_DATA_O       : out std_logic_vector(15 downto 0); -- data out
+				WB_DATA_I       : in  std_logic_vector(15 downto 0); -- data in
+				WB_WE_O         : out std_logic; -- read/write
+				WB_CYC_O        : out std_logic; -- cycle enable
+				WB_STB_O        : out std_logic; -- strobe
+				WB_ACK_I        : in  std_logic; -- acknowledge
+                WB_ERR_I        : in  std_logic  -- bus error
 			);
   end component;
 
@@ -683,7 +726,20 @@ package atlas_core_package is
 				PIO_IN_I        : in  std_logic_vector(15 downto 0); -- parallel input
 				SYS_OUT_O       : out std_logic_vector(07 downto 0); -- system output
 				SYS_IN_I        : in  std_logic_vector(07 downto 0); -- system input
-				IRQ_I           : in  std_logic_vector(01 downto 0)  -- IRQs
+				IRQ_I           : in  std_logic_vector(01 downto 0); -- IRQs
+
+                -- Wishbone Bus --
+                WB_CLK_O        : out std_logic; -- bus clock
+                WB_RST_O        : out std_logic; -- bus reset, sync, high active
+				WB_ADR_O        : out std_logic_vector(31 downto 0); -- address
+				WB_SEL_O        : out std_logic_vector(01 downto 0); -- byte select
+				WB_DATA_O       : out std_logic_vector(15 downto 0); -- data out
+				WB_DATA_I       : in  std_logic_vector(15 downto 0); -- data in
+				WB_WE_O         : out std_logic; -- read/write
+				WB_CYC_O        : out std_logic; -- cycle enable
+				WB_STB_O        : out std_logic; -- strobe
+				WB_ACK_I        : in  std_logic; -- acknowledge
+                WB_ERR_I        : in  std_logic  -- bus error
 			);
   end component;
 

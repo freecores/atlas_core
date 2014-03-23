@@ -6,7 +6,7 @@
 -- #  processing circuits are implemented within this     #
 -- #  unit.                                               #
 -- # **************************************************** #
--- #  Last modified: 25.01.2014                           #
+-- #  Last modified: 23.03.2014                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -59,6 +59,7 @@ entity SYS_REG is
 				PC_O            : out std_logic_vector(data_width_c-1 downto 0); -- pc output
 				PC_1D_O         : out std_logic_vector(data_width_c-1 downto 0); -- pc 1x delayed
 				CP_PTC_O        : out std_logic; -- user coprocessor protection
+                COND_TRUE_O     : out std_logic; -- condition is true
 				MODE_O          : out std_logic; -- current operating mode
 				MODE_FF_O       : out std_logic  -- delayed current mode
 			);
@@ -152,7 +153,7 @@ begin
 			-- sync update --
 			if rising_edge(CLK_I) then
 				if (RST_I = '1') then
-					SYS_REG_PC                   <= boot_adr_c; -- boot address
+					SYS_REG_PC                   <= start_adr_c; -- start address
 					SYS_REG_MSR                  <= (others => '0');
 					SYS_REG_MSR(msr_mode_flag_c) <= system_mode_c; -- we're the king after reset
 					SYS_REG_MSR(msr_svd_mode_c)  <= system_mode_c;
@@ -397,6 +398,9 @@ begin
 				when cond_al_c => valid_v := '1';                          -- always
 				when others    => valid_v := '0';                          -- undefined = never
 			end case;
+
+            -- Condition true output --
+            COND_TRUE_O <= valid_v;
 
 			-- Manual branch? --
 			manual_branch_v := EX_CTRL_BUS_I(ctrl_pc_wr_c);
