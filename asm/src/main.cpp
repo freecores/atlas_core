@@ -1641,18 +1641,15 @@ int assemble(const char *input_file, const char *output_file, const char *bin_ou
         opcode = (11<<10) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[1], line)<<4) | conv_reg(arg[1], line);
       else if (strcmp(arg[0], "COMS") == 0) // 1's complement and set flags
         opcode = (11<<10) | (1<<3) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[1], line)<<4) | conv_reg(arg[1], line);
-
-	  // Build-in Assembler Macros
-	  // ---------------------------------------------------------------------------------------------------------
       else if (strcmp(arg[0], "PUSH+") == 0) // push on positive growing stack
 	     opcode = (1<<14) | (1<<13) | (1<<12) | (1<<11) | (1<<10) | (conv_reg(arg[1], line)<<7) | (6<<4) | (1<<3) | (2<<0);
       else if (strcmp(arg[0], "POP+") == 0) // pop from positive growing stack
 	     opcode = (1<<14) | (0<<13) | (0<<12) | (1<<11) | (0<<10) | (conv_reg(arg[1], line)<<7) | (6<<4) | (1<<3) | (2<<0);
-      else if (strcmp(arg[0], "PUSHPOP") == 0) // pushpop from/on stack
+      else if (strcmp(arg[0], "PEEK") == 0) // pushpop from/on stack
 	     opcode = (1<<14) | (0<<13) | (1<<12) | (0<<11) | (0<<10) | (conv_reg(arg[1], line)<<7) | (6<<4) | (1<<3) | (0<<0);
-      else if (strcmp(arg[0], "PUSH-") == 0) // push on negative growing stack
+      else if (strcmp(arg[0], "PUSH") == 0) // push on negative growing stack
 	     opcode = (1<<14) | (1<<13) | (0<<12) | (1<<11) | (1<<10) | (conv_reg(arg[1], line)<<7) | (6<<4) | (1<<3) | (2<<0);
-      else if (strcmp(arg[0], "POP-") == 0) // pop from negative growing stack
+      else if (strcmp(arg[0], "POP") == 0) // pop from negative growing stack
 	     opcode = (1<<14) | (0<<13) | (1<<12) | (1<<11) | (0<<10) | (conv_reg(arg[1], line)<<7) | (6<<4) | (1<<3) | (2<<0);
 
 	  // Direct memory initialization - WORD
@@ -1758,7 +1755,7 @@ int main(int argc, char *argv[]){
 	int p_size = 0;
 	int i = 0;
 
-    printf("ATLAS 2k Assembler, Version 2014.03.23\n");
+    printf("ATLAS 2k Assembler, Version 2014.03.24\n");
     printf("by Stephan Nolting (stnolting@gmail.com), Hanover, Germany\n");
     printf("www.opencores.org/project,atlas_core\n\n");
 
