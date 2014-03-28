@@ -826,7 +826,10 @@ int conv_imm(char *input, int max_val, int line){
 
     int  imm = 65535;
     int  i = 0;
+    int  j = 0;
+    int  offset = 0;
 	char temp[32];
+	char num[32];
 	char input_string[32];
 	bool extended = false;
 
@@ -959,8 +962,89 @@ int conv_imm(char *input, int max_val, int line){
 	}
 
     imm = atoi(input_string); // normal immediate
-	
-	// immediate label-address?
+
+	// immediate REALTIVE LOW label-address?
+	if ((input_string[0] == 'R') and (input_string[1] == 'L') and (input_string[2] == 'O') and (input_string[3] == 'W') and (input_string[4] == '[')){
+	  for(i=5; i<31; i++){
+	    if (input_string[i] != ']')
+		  temp[i-5] = input_string[i];
+		else{
+		  temp[i-5] = '\0';
+		  break;
+		}
+	  }
+	  // inline math stuff?
+	  offset = 0;
+	  for(i=0; i<31; i++){
+	  	if ((temp[i] == '+') or (temp[i] == '-')) {
+	      if (temp[i] == '-')
+	        offset = -1;
+	      else
+	        offset = +1;
+	  	  temp[i] = '\0'; // terminate here
+	  	  for (j=0; j<(31-i); j++)
+	  	    num[j] = temp[i+j+1];
+	  	  offset = offset * atoi(num);
+	  	  break;
+	    }
+	  }
+	  if (temp[0] == '#'){ // immediate
+	    for(i=0; i<31; i++)
+          temp[i] = temp[i+1];
+		 if (extended == true)
+		   imm = ((atoi(temp) + offset - line) >> 16) & 255; // low immediate of 32-bit immediate
+		 else
+	       imm = (atoi(temp) + offset - line) & 255; // low immediate
+	  }
+	  else { // label address
+	    if (extended == true)
+		  imm = (((find_offset(temp, -1)-line-1)*2+offset) >> 16) & 255; // low immediate of 32-bit immediate
+		else
+	      imm = ((find_offset(temp, -1)-line-1)*2+offset) & 255; // low immediate
+	  }
+	}
+	// immediate REALTIVE HIGH label-address?
+	if ((input_string[0] == 'R') and (input_string[1] == 'H') and (input_string[2] == 'I') and (input_string[3] == 'G') and (input_string[4] == 'H') and (input_string[5] == '[')){
+	  for(i=6; i<31; i++){
+	    if (input_string[i] != ']')
+		  temp[i-6] = input_string[i];
+		else{
+		  temp[i-6] = '\0';
+		  break;
+		}
+	  }
+	  // inline math stuff?
+	  offset = 0;
+	  for(i=0; i<31; i++){
+	  	if ((temp[i] == '+') or (temp[i] == '-')) {
+	      if (temp[i] == '-')
+	        offset = -1;
+	      else
+	        offset = +1;
+	  	  temp[i] = '\0'; // terminate here
+	  	  for (j=0; j<(31-i); j++)
+	  	    num[j] = temp[i+j+1];
+	  	  offset = offset * atoi(num);
+	  	  break;
+	    }
+	  }
+	  if (temp[0] == '#'){ // immediate
+	    for(i=0; i<31; i++)
+          temp[i] = temp[i+1];
+		if (extended == true)
+		  imm = ((atoi(temp) + offset - line) >> 24) & 255; // high immediate of 32-bit immediate
+		else
+	      imm = ((atoi(temp) + offset - line) >> 8) & 255; // high immediate
+	  }
+	  else{ // label address
+	    if (extended == true)
+		  imm = (((find_offset(temp, -1)-line-1)*2+offset) >> 24) & 255; // high immediate of 32-bit immediate
+		else
+	      imm = (((find_offset(temp, -1)-line-1)*2+offset) >> 8) & 255; // high immediate
+	  }
+	}
+
+	// immediate LOW label-address?
 	if ((input_string[0] == 'L') and (input_string[1] == 'O') and (input_string[2] == 'W') and (input_string[3] == '[')){
 	  for(i=4; i<31; i++){
 	    if (input_string[i] != ']')
@@ -970,21 +1054,37 @@ int conv_imm(char *input, int max_val, int line){
 		  break;
 		}
 	  }
+	  // inline math stuff?
+	  offset = 0;
+	  for(i=0; i<31; i++){
+	  	if ((temp[i] == '+') or (temp[i] == '-')) {
+	      if (temp[i] == '-')
+	        offset = -1;
+	      else
+	        offset = +1;
+	  	  temp[i] = '\0'; // terminate here
+	  	  for (j=0; j<(31-i); j++)
+	  	    num[j] = temp[i+j+1];
+	  	  offset = offset * atoi(num);
+	  	  break;
+	    }
+	  }
 	  if (temp[0] == '#'){ // immediate
 	    for(i=0; i<31; i++)
           temp[i] = temp[i+1];
 		 if (extended == true)
-		   imm = (atoi(temp) >> 16) & 255; // low immediate of 32-bit immediate
+		   imm = ((atoi(temp) + offset) >> 16) & 255; // low immediate of 32-bit immediate
 		 else
-	       imm = atoi(temp) & 255; // low immediate
+	       imm = (atoi(temp) + offset) & 255; // low immediate
 	  }
-	  else {
+	  else { // label address
 	    if (extended == true)
-		  imm = (((find_offset(temp, -1)-2)*2) >> 16) & 255; // low immediate of 32-bit immediate
+		  imm = (((find_offset(temp, -1)-2)*2+offset) >> 16) & 255; // low immediate of 32-bit immediate
 		else
-	      imm = ((find_offset(temp, -1)-2)*2) & 255; // low immediate
+	      imm = ((find_offset(temp, -1)-2)*2+offset) & 255; // low immediate
 	  }
 	}
+	// immediate HIGH label-address?
 	if ((input_string[0] == 'H') and (input_string[1] == 'I') and (input_string[2] == 'G') and (input_string[3] == 'H') and (input_string[4] == '[')){
 	  for(i=5; i<31; i++){
 	    if (input_string[i] != ']')
@@ -994,19 +1094,34 @@ int conv_imm(char *input, int max_val, int line){
 		  break;
 		}
 	  }
+	  // inline math stuff?
+	  offset = 0;
+	  for(i=0; i<31; i++){
+	  	if ((temp[i] == '+') or (temp[i] == '-')) {
+	      if (temp[i] == '-')
+	        offset = -1;
+	      else
+	        offset = +1;
+	  	  temp[i] = '\0'; // terminate here
+	  	  for (j=0; j<(31-i); j++)
+	  	    num[j] = temp[i+j+1];
+	  	  offset = offset * atoi(num);
+	  	  break;
+	    }
+	  }
 	  if (temp[0] == '#'){ // immediate
 	    for(i=0; i<31; i++)
           temp[i] = temp[i+1];
 		if (extended == true)
-		  imm = (atoi(temp) >> 24) & 255; // high immediate of 32-bit immediate
+		  imm = ((atoi(temp) + offset) >> 24) & 255; // high immediate of 32-bit immediate
 		else
-	      imm = (atoi(temp) >> 8) & 255; // high immediate
+	      imm = ((atoi(temp) + offset) >> 8) & 255; // high immediate
 	  }
-	  else{
+	  else{ // label address
 	    if (extended == true)
-		  imm = (((find_offset(temp, -1)-2)*2) >> 24) & 255; // high immediate of 32-bit immediate
+		  imm = (((find_offset(temp, -1)-2)*2+offset) >> 24) & 255; // high immediate of 32-bit immediate
 		else
-	      imm = (((find_offset(temp, -1)-2)*2) >> 8) & 255; // high immediate
+	      imm = (((find_offset(temp, -1)-2)*2+offset) >> 8) & 255; // high immediate
 	  }
 	}
 
@@ -1755,7 +1870,7 @@ int main(int argc, char *argv[]){
 	int p_size = 0;
 	int i = 0;
 
-    printf("ATLAS 2k Assembler, Version 2014.03.24\n");
+    printf("ATLAS 2k Assembler, Version 2014.03.28\n");
     printf("by Stephan Nolting (stnolting@gmail.com), Hanover, Germany\n");
     printf("www.opencores.org/project,atlas_core\n\n");
 
