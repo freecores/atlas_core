@@ -87,11 +87,10 @@ boot_irq_error:
             mcr   #1, sys1_core, r0, #2				; set d-page
 
             ; set alarm lights
-            ldil  r0, #0xff
+            ldih  r0, #0b10011001
             mcr   #1, com0_core, r0, #7				; set system output
 
             ; print error message
-            bl    uart_linebreak__
             ldil  r2, low[string_err_irq]
             ldih  r2, high[string_err_irq]
             bl    uart_print_br__
@@ -102,29 +101,39 @@ boot_irq_error:
 ; *****************************************************************************************************************
 ; Main Program
 ; *****************************************************************************************************************
-reset:		; init MSR
-            ldil  r0, #0x00
-            ldih  r0, #0xF8							; sys_mode, prv_sys_mode, g_irq_en, int1_en, int0_en
-            stsr  r0
-
-            ; set mmu pages
+reset:		; set mmu pages
             mrc   #1, r0, sys1_core, #1				; get sys i-page
             mcr   #1, sys1_core, r0, #0
             mcr   #1, sys1_core, r0, #2
 
-            ; re-init lfsr, timer and IRQ controller
+            ; disable lfsr and timer
             ldil  r0, #0x00
-            mcr   #1, sys0_core, r0, #0				; clear irq mask register
-            mcr   #1, sys0_core, r0, #1				; clear irq config register
-            mcr   #1, sys0_core, r0, #2				; clear timer counter
-            mcr   #1, sys0_core, r0, #3				; clear timer threshold
-            mcr   #1, sys0_core, r0, #4				; clear timer prescaler
-            mcr   #1, sys0_core, r0, #5				; clear lfsr data register
-            mcr   #1, sys0_core, r0, #6				; clear lfsr polynomial register
+            mcr   #1, sys0_core, r0, #3				; clear timer threshold - disable timer
+            mcr   #1, sys0_core, r0, #6				; clear lfsr polynomial register - disable lfsr
+
+            ; setup IRQ controller (for network adapter)
+            ldih  r0, #0b00000010                   ; network adapter - channel 1
+            mcr   #1, sys0_core, r0, #0				; set irq mask register
+            ldil  r0, #0xff
+            mcr   #1, sys0_core, r0, #1				; set irq config register - all rising edge
             mrc   #1, r0, sys0_core, #0				; ack pending IRQs
 
+            ; init MSR
+            ldil  r1, #0x00
+            ldih  r1, #0xF8							; sys_mode, prv_sys_mode, g_irq_en, int1_en, int0_en
+            stsr  r1
+
+            ; setup Wishbone bus controller
+            ldil  r0, #0b00110000                   ; bus error and timeout error IRQ enable
+            ldih  r0, #0                            ; burst size = 1 word
+            mcr   #1, com1_core, r0, #0				; set WB ctrl reg
+            ldil  r0, #0x02                         ; offset = 1 word
+            mcr   #1, com1_core, r0, #3				; set WB address offset reg
+            ldil  r0, #100                          ; timeout = 100 cycles
+            mcr   #1, com1_core, r0, #5				; set WB timeout reg
+
             ; alive LED
-            ldih  r0, #1
+            ldih  r0, #0x01
             mcr   #1, com0_core, r0, #7				; set system output
 
             ; get system clock frequency
@@ -159,13 +168,6 @@ main_baud_loop:
             ldil  r2, low[string_intro0]
             ldih  r2, high[string_intro0]
             bl    uart_print_br__
-            ldil  r2, low[string_intro1]
-            ldih  r2, high[string_intro1]
-            bl    uart_print_br__
-            ldil  r2, low[string_intro2]
-            ldih  r2, high[string_intro2]
-            bl    uart_print_br__
-            bl    uart_linebreak__
 
             ; print boot page
             ldil  r2, low[string_intro3]
@@ -209,15 +211,6 @@ start_console:
             ldil  r2, low[string_menu0]
             ldih  r2, high[string_menu0]
             bl    uart_print_br__
-            ldil  r2, low[string_menu1]
-            ldih  r2, high[string_menu1]
-            bl    uart_print_br__
-            ldil  r2, low[string_menu2]
-            ldih  r2, high[string_menu2]
-            bl    uart_print_br__
-            ldil  r2, low[string_menu3]
-            ldih  r2, high[string_menu3]
-            bl    uart_print_br__
             ldil  r2, low[string_menup]
             ldih  r2, high[string_menup]
             bl    uart_print_br__
@@ -226,6 +219,9 @@ start_console:
             bl    uart_print_br__
             ldil  r2, low[string_menur]
             ldih  r2, high[string_menur]
+            bl    uart_print_br__
+            ldil  r2, low[string_menuw]
+            ldih  r2, high[string_menuw]
             bl    uart_print_br__
 
 console_input:
@@ -271,15 +267,18 @@ console_selector:
             cmp   r1, r6
             rbaeq r5								; ram dump
 
+            ldil  r5, low[wb_dump]
+            ldih  r5, high[wb_dump]
+            ldil  r1, #'w'
+            cmp   r1, r6
+            rbaeq r5								; ram dump
+
             ldil  r1, #'r'
             cmp   r1, r6
             bne   console_input						; invalid input
 
             ; do 'hard' reset
             clr   r0
-            ldil  r1, #0x00
-            ldih  r1, #0x80							; start of boot pages
-            mcr   #1, sys1_core, r1, #1
             gt    r0
 
 
@@ -287,8 +286,8 @@ console_selector:
 ; Booting from memory
 ; -----------------------------------------------------------------------------------
 boot_memory:
-            ldil  r2, low[string_boot_mem]
-            ldih  r2, high[string_boot_mem]
+            ldil  r2, low[string_booting]
+            ldih  r2, high[string_booting]
             bl    uart_print_br__
 
             ; print no image info on start-up
@@ -314,8 +313,8 @@ print_hex_string__:     b print_hex_string_
 ; -----------------------------------------------------------------------------------
 boot_eeprom:
             ; intro
-            ldil  r2, low[string_boot_spi]
-            ldih  r2, high[string_boot_spi]
+            ldil  r2, low[string_booting]
+            ldih  r2, high[string_booting]
             bl    uart_print_br_
 
             ; get signature
@@ -422,8 +421,8 @@ boot_eeprom_loop:
 ; -----------------------------------------------------------------------------------
 ; Booting from UART
 ; -----------------------------------------------------------------------------------
-boot_uart:	ldil  r2, low[string_boot_uart]
-            ldih  r2, high[string_boot_uart]
+boot_uart:	ldil  r2, low[string_booting]
+            ldih  r2, high[string_booting]
             bl    uart_print_br_
             ldil  r2, low[string_boot_wimd]
             ldih  r2, high[string_boot_wimd]
@@ -505,9 +504,13 @@ uart_downloader:
 
 download_completed:
             ; re-init system d page
-            ldil  r0, #0x00
-            ldih  r0, #0x80
-            mcr   #1, sys1_core, r0, #2				; set system d-page
+            mrc   #1, r0, sys1_core, #1				; get sys i-page
+            mcr   #1, sys1_core, r0, #2				; reset system d-page
+
+            ; download completed
+            ldil  r2, low[string_done]
+            ldih  r2, high[string_done]
+            bl    uart_print_br_
 
             ; transfer done - check checksum
             ldub  r0, r7
@@ -596,7 +599,7 @@ start_image_no_text:
             bl    uart_linebreak
             bl    uart_linebreak
 
-            clr   r0								; ZERO!
+            CLR   R0								; ZERO!
 
             ; re-init MSR
             sbr   r3, r0, #14						; prv_sys_mode
@@ -1223,38 +1226,97 @@ spi_eeprom_read_byte:
             ret   r1
 
 
+; -----------------------------------------------------------------------------------
+; Wisbone Dump
+; -----------------------------------------------------------------------------------
+wb_dump:    ldil  r2, low[string_ewbadr]
+            ldih  r2, high[string_ewbadr]
+            bl    uart_print
+
+            ; get and set address (32-bit)
+            bl    receive_hex_word
+            mcr   #1, com1_core, r4, #2             ; set high part of base address
+            bl    receive_hex_word
+            mcr   #1, com1_core, r4, #1             ; set low part of base address
+
+wb_dump_wait:
+            ; execute?
+            bl    uart_receivebyte
+            ldil  r1, #0x0D							; CR - enter
+            cmp   r0, r1
+            beq   wb_dump_proceed
+
+            ; abort?
+            ldil  r1, #0x08							; Backspace - abort
+            cmp   r0, r1
+            beq   wb_dump_end
+            b     wb_dump_wait
+
+            ; download word from wishbone net
+wb_dump_proceed:
+            bl    wb_read_word
+            mov   r6, r0
+
+            ; print it
+            ldil  r2, low[string_data]
+            ldih  r2, high[string_data]
+            bl    uart_print
+            mov   r4, r6
+            bl    print_hex_string
+
+            ; return to main console
+wb_dump_end:
+            bl    uart_linebreak
+            ldil  r5, low[console_input]
+            ldih  r5, high[console_input]
+            gt    r5
+
+
+; --------------------------------------------------------------------------------------------------------
+; Reads 1 word from the Wishbone network (base address must be set before, auto address increment)
+; Arguments: -
+; Results:
+;  r0 = data
+; Used registers: r0 ,lr
+wb_read_word:
+; --------------------------------------------------------------------------------------------------------
+            cdp   #1, com1_core, com1_core, #0      ; initiate read-transfer
+            mrc   #1, r0, com1_core, #0				; get WB status reg
+            stb   r0, #6                            ; busy flag -> t-flag
+            bts   #-2                               ; repeat until data is ready
+
+            mrc   #1, r0, com1_core, #4				; get data
+            ret   lr
+
+
 ; *****************************************************************************************************************
 ; ROM: Text strings
 ; *****************************************************************************************************************
 
-string_intro0:    .stringz "ATLAS-2K Bootloader - Version 2014.03.15"
-string_intro1:    .stringz "by Stephan Nolting, stnolting@gmail.com"
-string_intro2:    .stringz "www.opencores.org/project,atlas_core"
-string_intro3:    .stringz "Bootloader start: 0x"
-string_intro4:    .stringz "Clock speed (Hz): 0x"
+string_intro0:    .stringz "Atlas-2K Bootloader - V20140410\nby Stephan Nolting, stnolting@gmail.com\nwww.opencores.org/project,atlas_core\n"
+string_intro3:    .stringz "Bootloader @ 0x"
+string_intro4:    .stringz "Clock (Hz): 0x"
 
-string_boot_spi:  .stringz "Booting from SPI EEPROM"
-string_boot_uart: .stringz "Booting from UART"
+string_booting:   .stringz "Booting..."
 string_prog_eep:  .stringz "Burning EEPROM"
 string_boot_wimd: .stringz "Waiting for image data..."
-string_boot_mem:  .stringz "Booting from memory..."
 string_start_im:  .stringz "Starting image "
 string_done:      .stringz "Download completed!"
 string_edpage:    .stringz "Enter page (4hex): 0x"
+string_ewbadr:    .stringz "Enter addr (8hex): 0x"
 string_checksum:  .stringz "Checksum: 0x"
+string_data:      .stringz "\n-> 0x"
 
-string_menu_hd:   .stringz "Command/boot switch"
-string_menu0:     .stringz " 0/'00': Restart console"
-string_menu1:     .stringz " 1/'01': Boot from UART"
-string_menu2:     .stringz " 2/'10': Boot from EEPROM"
-string_menu3:     .stringz " 3/'11': Boot from memory"
-string_menup:     .stringz " p: Program EEPROM"
+string_menu_hd:   .stringz "cmd/boot-switch"
+string_menu0:     .stringz " 0/'00': Restart console\n 1/'01': Boot from UART\n 2/'10': Boot from EEPROM\n 3/'11': Boot from memory"
+string_menup:     .stringz " p: Burn EEPROM"
 string_menud:     .stringz " d: RAM dump"
 string_menur:     .stringz " r: Reset"
+string_menuw:     .stringz " w: WB dump"
 string_menux:     .stringz "cmd:> "
 
-string_err_image: .stringz "IMAGE ERROR!"
-string_err_irq:   .stringz "IRQ ERROR!"
-string_err_check: .stringz "CHECKSUM ERROR!"
-string_err_eep:   .stringz "SPI/EEPROM ERROR!"
+string_err_image: .stringz "IMAGE ERR!"
+string_err_irq:   .stringz "\nIRQ ERR!"
+string_err_check: .stringz "CHECKSUM ERR!"
+string_err_eep:   .stringz "SPI/EEPROM ERR!"
 string_err_res:   .stringz "Press any key"

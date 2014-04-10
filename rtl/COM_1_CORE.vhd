@@ -6,7 +6,7 @@
 -- #  -> Variable Length Burst-Transfers                   #
 -- #  -> Bus access is pipelined                           #
 -- # ***************************************************** #
--- #  Last modified: 23.03.2014                            #
+-- #  Last modified: 10.04.2014                            #
 -- # ***************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany            #
 -- #########################################################
@@ -131,6 +131,7 @@ begin
                     TIMEOUT_VAL       <= (others => '0');
                     BUS_ERR_IRQ_EN    <= '0';
                     TRANS_DONE_IRQ_EN <= '0';
+                    TIMEOUT_IRQ_EN    <= '0';
 				elsif (ICE_I = '1') then -- interface enable
 					if (W_EN_I = '1') and (ARB_BUSY = '0') then -- register update only if not busy
 						case (ADR_I) is

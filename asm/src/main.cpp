@@ -155,10 +155,11 @@ void convert_strings(const char *input_file, const char *output_file){
 
     FILE *input, *output;
     char line_input[1024];
-    int  i = 0, j = 0, k = 0;
+    int  i = 0, j = 0, k = 0, l = 0;
     char *cut_out;
     char txt_string[256];
     char tmp_string[256];
+    char out_string[256];
     char buf_string[256];
     bool found = false;
 	int  fill_data_cnt = 0;
@@ -240,15 +241,23 @@ void convert_strings(const char *input_file, const char *output_file){
 		    tmp_string[j] = tmp_string[j+i+8];
 		  
 		  // isolate text part
+		  l = 0;
 		  for(k=0; k<strlen(tmp_string); k++){
 		    if (tmp_string[k] == 34){ // beginning of string text field
 			  for(j=0; j<strlen(tmp_string); j++){
 			    if(tmp_string[j+k+1] == 34) // end of string text field
 				  break;
-				else
-			      tmp_string[j] = tmp_string[j+k+1];
+				else{
+				  if ((tmp_string[j+k+1] ==92) && (tmp_string[j+k+2] == 'n')){ // is linebreak command?
+				    out_string[l++] = 13; // carriage return
+				    out_string[l++] = 10; // line feed
+				    k++; // skip second line break char in input string
+				  }
+				  else
+			        out_string[l++] = tmp_string[j+k+1];
+				}
 			  }
-		      tmp_string[j] = '\0'; // terminate string
+		      out_string[l] = '\0'; // terminate string
 			  break;
 			}
 		  }
@@ -266,14 +275,14 @@ void convert_strings(const char *input_file, const char *output_file){
 			break;
 		  }
 		}
-		// save integer conversion
+		// save integer conversion of string
 		word = 0;
-		for(k=0; k<strlen(tmp_string); k++){
+		for(k=0; k<strlen(out_string); k++){
 		  if (k%2==0){
-		    word = (int)tmp_string[k] << 8;
+		    word = (int)out_string[k] << 8;
           }
 		  else{
-		    word = word | (int)tmp_string[k];
+		    word = word | (int)out_string[k];
 		    sprintf(txt_string, ".dw #%d\n", word);
             fputs(txt_string, output);
 	      }
@@ -1870,7 +1879,7 @@ int main(int argc, char *argv[]){
 	int p_size = 0;
 	int i = 0;
 
-    printf("ATLAS 2k Assembler, Version 2014.03.28\n");
+    printf("ATLAS 2k Assembler, Version 2014.04.10\n");
     printf("by Stephan Nolting (stnolting@gmail.com), Hanover, Germany\n");
     printf("www.opencores.org/project,atlas_core\n\n");
 

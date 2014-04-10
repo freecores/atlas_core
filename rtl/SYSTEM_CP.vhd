@@ -3,7 +3,7 @@
 -- # **************************************************** #
 -- #  Top entity of the system extension coprocessor.     #
 -- # **************************************************** #
--- #  Last modified: 21.03.2014                           #
+-- #  Last modified: 09.04.2014                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -76,7 +76,7 @@ entity SYSTEM_CP is
 				SYS_IN_I        : in  std_logic_vector(07 downto 0); -- system input
 
 				-- IRQs --
-				IRQ_I           : in  std_logic_vector(01 downto 0); -- IRQs
+				IRQ_I           : in  std_logic; -- IRQ
 
 -- ###############################################################################################
 -- ##           Wishbone Bus                                                                    ##
@@ -222,8 +222,8 @@ begin
 		INT_ASSIGN(3) <= UART_TX_IRQ; -- UART data send irq
 		INT_ASSIGN(4) <= SPI_IRQ;     -- SPI transfer done irq
 		INT_ASSIGN(5) <= PIO_IRQ;     -- PIO input change IRQ
-		INT_ASSIGN(6) <= IRQ_I(0);    -- 'external' irq
-		INT_ASSIGN(7) <= IRQ_I(1);    -- 'external' irq
+		INT_ASSIGN(6) <= '0';         -- reserved
+		INT_ASSIGN(7) <= IRQ_I;       -- 'external' irq
 
 
 

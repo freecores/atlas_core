@@ -4,7 +4,7 @@
 -- #  All architecture configurations, options, signal    #
 -- #  definitions and components are listed here.         #
 -- # **************************************************** #
--- #  Last modified: 23.03.2014                           #
+-- #  Last modified: 09.04.2014                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -19,7 +19,7 @@ package atlas_core_package is
   -- -------------------------------------------------------------------------------------------
     constant big_endian_c      : boolean := false; -- use little/big endian memory system
 	constant build_mul_c       : boolean := true;  -- build a dedicated MUL unit
-	constant build_mac_c       : boolean := false; -- build a dedicated MAC unit
+	constant build_mac_c       : boolean := false; -- build a dedicated MAC unit - do not change!
 	constant word_mode_en_c    : boolean := false; -- use word-addressed memory system instead of byte-addressed
     constant wb_fifo_size_c    : natural := 32; -- Wishbone fifo size in words (power of 2!)
 
@@ -726,7 +726,7 @@ package atlas_core_package is
 				PIO_IN_I        : in  std_logic_vector(15 downto 0); -- parallel input
 				SYS_OUT_O       : out std_logic_vector(07 downto 0); -- system output
 				SYS_IN_I        : in  std_logic_vector(07 downto 0); -- system input
-				IRQ_I           : in  std_logic_vector(01 downto 0); -- IRQs
+				IRQ_I           : in  std_logic; -- IRQ
 
                 -- Wishbone Bus --
                 WB_CLK_O        : out std_logic; -- bus clock

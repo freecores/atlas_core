@@ -11,7 +11,7 @@
 -- #  declared in this section (in Hz).                    #
 -- #                                                       #
 -- # ***************************************************** #
--- #  Last modified: 22.03.2014                            #
+-- #  Last modified: 09.04.2014                            #
 -- # ***************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany            #
 -- #########################################################
@@ -112,7 +112,7 @@ architecture ATLAS_2K_BASE_TOP_STRUCTURE of ATLAS_2K_BASE_TOP is
 				PIO_IN_I        : in  std_logic_vector(15 downto 0); -- parallel input
 				SYS_OUT_O       : out std_logic_vector(07 downto 0); -- system parallel output
 				SYS_IN_I        : in  std_logic_vector(07 downto 0); -- system parallel input
-				IRQ_I           : in  std_logic_vector(01 downto 0); -- IRQs
+				IRQ_I           : in  std_logic; -- IRQ
                 WB_CLK_O        : out std_logic; -- bus clock
                 WB_RST_O        : out std_logic; -- bus reset, sync, high active
 				WB_ADR_O        : out std_logic_vector(31 downto 0); -- address
@@ -224,13 +224,13 @@ begin
 						SPI_MISO_I      => SPI_MISO_I,     -- serial data input
 						SPI_CS_O        => SPI_CS_O,       -- device select - low-active
 
-						PIO_OUT_O       => open,           -- parallel output
-						PIO_IN_I        => x"0000",        -- parallel input
+						PIO_OUT_O       => PIO_OUT_O,      -- parallel output
+						PIO_IN_I        => PIO_IN_I,       -- parallel input
 
 						SYS_OUT_O       => SYS_OUT_O,      -- system parallel output
 						SYS_IN_I        => SYS_IN_I,       -- system parallel input
 
-						IRQ_I           => "00",           -- IRQs
+						IRQ_I           => '0',            -- IRQ - not used here
 
                         WB_CLK_O        => WB_CLK_O,       -- bus clock
                         WB_RST_O        => WB_RST_O,       -- bus reset, sync, high active

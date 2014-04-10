@@ -12,7 +12,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="151" />
+   <WVObjectSize size="155" />
    <wvobject fp_name="divider11" type="divider">
       <obj_property name="label">Global Control</obj_property>
       <obj_property name="DisplayName">label</obj_property>
@@ -595,10 +595,9 @@
       <obj_property name="ElementShortName">critical_irq_i</obj_property>
       <obj_property name="ObjectShortName">critical_irq_i</obj_property>
    </wvobject>
-   <wvobject fp_name="/atlas_2k_base_tb/DUT/the_core_of_the_problem/irq_i" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">irq_i[1:0]</obj_property>
-      <obj_property name="ObjectShortName">irq_i[1:0]</obj_property>
-      <obj_property name="Radix">BINARYRADIX</obj_property>
+   <wvobject fp_name="/atlas_2k_base_tb/DUT/the_core_of_the_problem/irq_i" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">irq_i</obj_property>
+      <obj_property name="ObjectShortName">irq_i</obj_property>
    </wvobject>
    <wvobject fp_name="divider11" type="divider">
       <obj_property name="label">CP - COM_1</obj_property>
@@ -610,6 +609,10 @@
    <wvobject fp_name="/atlas_2k_base_tb/DUT/the_core_of_the_problem/system_coprocessor/communication_ctrl_1/cmd_exe_i" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">cmd_exe_i</obj_property>
       <obj_property name="ObjectShortName">cmd_exe_i</obj_property>
+   </wvobject>
+   <wvobject fp_name="/atlas_2k_base_tb/DUT/the_core_of_the_problem/system_coprocessor/communication_ctrl_1/irq_o" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">irq_o</obj_property>
+      <obj_property name="ObjectShortName">irq_o</obj_property>
    </wvobject>
    <wvobject fp_name="/atlas_2k_base_tb/DUT/the_core_of_the_problem/system_coprocessor/communication_ctrl_1/rx_fifo_r_pnt" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">rx_fifo_r_pnt[4:0]</obj_property>
@@ -985,6 +988,18 @@
       <obj_property name="ElementShortName">timeout_val[15:0]</obj_property>
       <obj_property name="ObjectShortName">timeout_val[15:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/atlas_2k_base_tb/DUT/the_core_of_the_problem/system_coprocessor/communication_ctrl_1/bus_err_irq_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">bus_err_irq_en</obj_property>
+      <obj_property name="ObjectShortName">bus_err_irq_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/atlas_2k_base_tb/DUT/the_core_of_the_problem/system_coprocessor/communication_ctrl_1/timeout_irq_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">timeout_irq_en</obj_property>
+      <obj_property name="ObjectShortName">timeout_irq_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/atlas_2k_base_tb/DUT/the_core_of_the_problem/system_coprocessor/communication_ctrl_1/bus_err_en_irq_c" type="other" db_ref_id="1">
+      <obj_property name="ElementShortName">bus_err_en_irq_c</obj_property>
+      <obj_property name="ObjectShortName">bus_err_en_irq_c</obj_property>
    </wvobject>
    <wvobject fp_name="/atlas_2k_base_tb/DUT/the_core_of_the_problem/system_coprocessor/communication_ctrl_1/timeout_cnt" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">timeout_cnt[15:0]</obj_property>

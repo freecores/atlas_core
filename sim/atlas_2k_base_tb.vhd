@@ -157,7 +157,7 @@ begin
 	-- --------------------------------------------------------------------------------------------------------
 		WB_MEM_FILE_ACCESS: process(WB_CLK)
 		begin
-			if falling_edge(WB_CLK) then
+			if rising_edge(WB_CLK) then
 
 				--- Data Read/Write ---
 				if (WB_STB = '1') and (WB_CYC = '1') then

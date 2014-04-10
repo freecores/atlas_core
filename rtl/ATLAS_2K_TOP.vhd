@@ -4,7 +4,7 @@
 -- #  This is the top entity oth ATLAS 2k processor.      #
 -- #  See the core's data sheet for more information.     #
 -- # **************************************************** #
--- #  Last modified: 22.03.2014                           #
+-- #  Last modified: 09.04.2014                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -84,7 +84,7 @@ entity ATLAS_2K_TOP is
 				SYS_IN_I        : in  std_logic_vector(07 downto 0); -- system input
 
 				-- IRQs --
-				IRQ_I           : in  std_logic_vector(01 downto 0); -- IRQs
+				IRQ_I           : in  std_logic; -- IRQ
 
 -- ###############################################################################################
 -- ##          Wishbone Bus                                                                     ##
@@ -257,7 +257,7 @@ begin
 						SYS_IN_I        => SYS_IN_I,       -- system parallel input
 
 						-- IRQ Lines --
-						IRQ_I           => IRQ_I,          -- external IRQs
+						IRQ_I           => IRQ_I,          -- external IRQ
 
                         -- Wishbone Bus --
                         WB_CLK_O        => WB_CLK_O,       -- bus clock
