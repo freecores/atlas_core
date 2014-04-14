@@ -388,10 +388,9 @@ boot_eeprom:
             cmp   r0, r5
             bne   signature_err_
 
-            ; get size
+            ; get size in bytes
             ldil  r2, #2
             bl    eeprom_get_word                   ; get word from EEPROM
-            sft   r5, r5, #lsl                      ; size in words!
             stub  r0, r5
 
             ; get checksum
