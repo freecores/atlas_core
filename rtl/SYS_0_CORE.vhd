@@ -5,7 +5,7 @@
 -- #  -> High Precision Timer (16+16 bit)                  #
 -- #  -> Linear-Feedback Shift Register (16 bit)           #
 -- # ***************************************************** #
--- #  Last modified: 29.01.2014                            #
+-- #  Last modified: 13.04.2014                            #
 -- # ***************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany            #
 -- #########################################################
@@ -107,7 +107,7 @@ begin
 					IRQ_SYNC_0   <= (others => '0');
 					IRQ_SYNC_1   <= (others => '0');
 				else
-					-- IRQ write access --
+					-- IRQ CTRL write access --
 					if (W_EN_I = '1') and (ICE_I = '1') and ((ADR_I = irq_sm_reg_c) or (ADR_I = irq_conf_reg_c)) then
 						if (ADR_I = irq_sm_reg_c) then
 							IRQ_MASK_REG <= DAT_I(15 downto 08);
@@ -168,7 +168,7 @@ begin
 		TMR_THRES_ZERO <= '1' when (TMR_THR_REG = x"0000") else '0';
 
 		-- Timer IRQ --
-		TIMER_IRQ_O    <= '1'  when ((TMR_CNT_REG = TMR_THR_REG) and (TMR_THRES_ZERO = '0')) else '0';
+		TIMER_IRQ_O    <= '1' when ((TMR_CNT_REG = TMR_THR_REG) and (TMR_THRES_ZERO = '0')) else '0';
 
 
 

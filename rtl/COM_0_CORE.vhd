@@ -6,7 +6,7 @@
 -- #  -> Parallel IO  (16 in, 16 out)                      #
 -- #  -> System IO (8 in, 8 out)                           #
 -- # ***************************************************** #
--- #  Last modified: 05.03.2014                            #
+-- #  Last modified: 12.04.2014                            #
 -- # ***************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany            #
 -- #########################################################
@@ -77,9 +77,9 @@ architecture COM_0_CORE_BEHAV of COM_0_CORE is
 	constant spi_cr_cpha_c          : natural :=  2; -- R/W: edge offset: 0: first edge, 1: second edge
 	constant spi_cr_bsy_c           : natural :=  3; -- R:   transceiver is busy when '1'
 	constant spi_cr_auto_cs_c       : natural :=  4; -- R/W: Auto apply CS when '1'
-	constant uart_tx_busy_c         : natural :=  5; -- R: UART transmitter is busy
+	constant uart_tx_busy_c         : natural :=  5; -- R:   UART transmitter is busy
 	constant uart_en_c              : natural :=  6; -- R/W: UART enable
---	constant                        : natural :=  7; -- reserved
+	constant uart_ry_ovf_c          : natural :=  7; -- R:   UART Rx overflow corruption
 	constant spi_cr_ln_lsb_c        : natural :=  8; -- R/W: data length lsb
 	constant spi_cr_ln_msb_c        : natural := 11; -- R/W: data length msb
 	constant spi_cr_prsc_lsb_c      : natural := 12; -- R/W: SPI clock prescaler lsb
@@ -95,6 +95,7 @@ architecture COM_0_CORE_BEHAV of COM_0_CORE is
 	-- UART Transceiver --
 	signal UART_RX_SYNC             : std_logic_vector(03 downto 0);
 	signal UART_TX_BSY_FLAG         : std_logic;
+    signal UART_DCOR_FLAG           : std_logic;
 	signal UART_RX_BSY_FLAG         : std_logic;
 	signal UART_TX_SREG             : std_logic_vector(09 downto 0);
 	signal UART_RX_SREG             : std_logic_vector(09 downto 0);
@@ -191,16 +192,17 @@ begin
 	-- Read Access -----------------------------------------------------------------------------------------
 	-- --------------------------------------------------------------------------------------------------------
 		R_ACC: process(ADR_I, UART_TX_BSY_FLAG, UART_RX_READY, UART_RX_REG, UART_PRSC_REG, COM_CONFIG_REG,
-		               SPI_BUSY_FLAG, SPI_CS_REG, SPI_RX_REG, PIO_OUT_DATA, PIO_IN_DATA, SYS_IO_I_FF)
+		               SPI_BUSY_FLAG, SPI_CS_REG, SPI_RX_REG, PIO_OUT_DATA, PIO_IN_DATA, SYS_IO_I_FF, UART_DCOR_FLAG)
 		begin
 			case (ADR_I) is
 				when uart_rtx_sd_reg_c => DAT_O                  <= (others => '0');
 				                          DAT_O(7 downto 0)      <= UART_RX_REG;
 				                          DAT_O(uart_rx_ready_c) <= UART_RX_READY;
 				when uart_prsc_reg_c   => DAT_O <= UART_PRSC_REG;
-				when com_ctrl_reg_c    => DAT_O                 <= COM_CONFIG_REG;
-				                          DAT_O(spi_cr_bsy_c)   <= SPI_BUSY_FLAG;
-				                          DAT_O(uart_tx_busy_c) <= UART_TX_BSY_FLAG;
+				when com_ctrl_reg_c    => DAT_O                  <= COM_CONFIG_REG;
+				                          DAT_O(spi_cr_bsy_c)    <= SPI_BUSY_FLAG;
+				                          DAT_O(uart_tx_busy_c)  <= UART_TX_BSY_FLAG;
+				                          DAT_O(uart_ry_ovf_c)   <= UART_DCOR_FLAG;
 				when spi_data_reg_c    => DAT_O <= SPI_RX_REG;
 				when spi_cs_reg_c      => DAT_O <= x"00" & SPI_CS_REG;
 				when pio_in_reg_c      => DAT_O <= PIO_IN_DATA;
@@ -220,13 +222,16 @@ begin
 				if (RST_I = '1') then
 					UART_RX_READY      <= '0';
 					UART_RX_READY_SYNC <= '0';
+                    UART_DCOR_FLAG     <= '0';
 				else
-					-- Ready Flag --
+					-- Ready flag and corruption flag --
 					UART_RX_READY_SYNC <= UART_RX_BSY_FLAG;
 					if (UART_RX_READY = '1') and (R_EN_I = '1') and (ADR_I = uart_rtx_sd_reg_c) and (ICE_I = '1') then
-						UART_RX_READY <= '0';
+						UART_RX_READY  <= '0';
+                        UART_DCOR_FLAG <= '0';
 					elsif (UART_RX_READY_SYNC = '1') and (UART_RX_BSY_FLAG = '0') then -- falling edge
-						UART_RX_READY <= '1';
+						UART_RX_READY  <= '1';
+                        UART_DCOR_FLAG <= UART_RX_READY;
 					end if;
 				end if;
 			end if;

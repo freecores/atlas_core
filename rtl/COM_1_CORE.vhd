@@ -1,10 +1,10 @@
 -- #########################################################
 -- #   << ATLAS Project - Communication Controller 1 >>    #
 -- # ***************************************************** #
--- #  Wishbone Bus Adapter                                 #
--- #  -> 32-bit address, 16-bit data                       #
--- #  -> Variable Length Burst-Transfers                   #
--- #  -> Bus access is pipelined                           #
+-- #  - Wishbone Bus Adapter                               #
+-- #    -> 32-bit address, 16-bit data                     #
+-- #    -> Variable Length Burst-Transfers                 #
+-- #    -> Bus access is pipelined                         #
 -- # ***************************************************** #
 -- #  Last modified: 10.04.2014                            #
 -- # ***************************************************** #
@@ -49,6 +49,7 @@ entity COM_1_CORE is
 				WB_CYC_O        : out std_logic; -- cycle enable
 				WB_STB_O        : out std_logic; -- strobe
 				WB_ACK_I        : in  std_logic; -- acknowledge
+--              WB_HALT_I       : in  std_logic; -- halt transfer
                 WB_ERR_I        : in  std_logic  -- bus error
 			);
 end COM_1_CORE;
@@ -142,7 +143,7 @@ begin
                                 TIMEOUT_IRQ_EN    <= DAT_I(timeout_en_irq_c);
 							when base_adr_l_reg_c => BASE_ADR(15 downto 00) <= DAT_I;
 							when base_adr_h_reg_c => BASE_ADR(31 downto 16) <= DAT_I;
-							when adr_offset_c     => ADR_OFFSET <= DAT_I;
+							when adr_offset_c     => ADR_OFFSET  <= DAT_I;
                             when timeout_val_c    => TIMEOUT_VAL <= DAT_I;
 							when others => NULL;
 						end case;
@@ -219,7 +220,7 @@ begin
 		ADR_OFFSET_COMP: process(ADR_OFFSET)
 		begin
 			WB_ADR_OFFSET(15 downto 0) <= ADR_OFFSET;
-            for i in 16 to 31 loop
+            for i in 16 to 31 loop -- sign extension
                 WB_ADR_OFFSET(i) <= ADR_OFFSET(15);
             end loop;
 		end process ADR_OFFSET_COMP;

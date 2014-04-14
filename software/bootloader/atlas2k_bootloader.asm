@@ -34,7 +34,8 @@
 ;  usr_r4: Image name (4,5)
 ;  usr_r5: Image name (6,7)
 ;  usr_r6: Image name (8,9)
-;  usr_r7: Checksum computation
+;  usr_r7: GP global variable
+;  LFSR_data: Checksum computation
 ; *****************************************************************************************************************
 ; *****************************************************************************************************************
 
@@ -93,7 +94,7 @@ boot_irq_error:
             ; print error message
             ldil  r2, low[string_err_irq]
             ldih  r2, high[string_err_irq]
-            bl    uart_print_br__
+            bl    uart_print__
 
             b     #+0								; freeze
 
@@ -106,35 +107,28 @@ reset:		; set mmu pages
             mcr   #1, sys1_core, r0, #0
             mcr   #1, sys1_core, r0, #2
 
-            ; disable lfsr and timer
-            ldil  r0, #0x00
+            ; init MSR
+            ldil  r7, #0x00
+            ldih  r7, #0xF8							; sys_mode, prv_sys_mode, g_irq_en, int1_en, int0_en
+            stsr  r7
+
+            ; disable irq ctrl, lfsr and timer
+            CLR   R0                                ; ZERO
+            mcr   #1, sys0_core, r0, #0				; clear irq mask register
             mcr   #1, sys0_core, r0, #3				; clear timer threshold - disable timer
             mcr   #1, sys0_core, r0, #6				; clear lfsr polynomial register - disable lfsr
-
-            ; setup IRQ controller (for network adapter)
-            ldih  r0, #0b00000010                   ; network adapter - channel 1
-            mcr   #1, sys0_core, r0, #0				; set irq mask register
-            ldil  r0, #0xff
-            mcr   #1, sys0_core, r0, #1				; set irq config register - all rising edge
             mrc   #1, r0, sys0_core, #0				; ack pending IRQs
 
-            ; init MSR
-            ldil  r1, #0x00
-            ldih  r1, #0xF8							; sys_mode, prv_sys_mode, g_irq_en, int1_en, int0_en
-            stsr  r1
-
             ; setup Wishbone bus controller
-            ldil  r0, #0b00110000                   ; bus error and timeout error IRQ enable
-            ldih  r0, #0                            ; burst size = 1 word
-            mcr   #1, com1_core, r0, #0				; set WB ctrl reg
+            mcr   #1, com1_core, r0, #0				; set WB ctrl reg (burst size = 1, all options disabled)
             ldil  r0, #0x02                         ; offset = 1 word
             mcr   #1, com1_core, r0, #3				; set WB address offset reg
             ldil  r0, #100                          ; timeout = 100 cycles
             mcr   #1, com1_core, r0, #5				; set WB timeout reg
 
             ; alive LED
-            ldih  r0, #0x01
-            mcr   #1, com0_core, r0, #7				; set system output
+            ldih  r2, #0x01
+            mcr   #1, com0_core, r2, #7				; set system output
 
             ; get system clock frequency
             mrc   #1, r0, sys1_core, #7				; clock low
@@ -163,11 +157,9 @@ main_baud_loop:
             mcr   #1, com0_core, r0, #2				; com ctrl reg
 
             ; print intro
-            bl    uart_linebreak__
-            bl    uart_linebreak__
             ldil  r2, low[string_intro0]
             ldih  r2, high[string_intro0]
-            bl    uart_print_br__
+            bl    uart_print__
 
             ; print boot page
             ldil  r2, low[string_intro3]
@@ -175,7 +167,6 @@ main_baud_loop:
             bl    uart_print__
             mrc   #1, r4, sys1_core, #1				; get sys i-page
             bl    print_hex_string__
-            bl    uart_linebreak__
 
             ; print clock speed
             ldil  r2, low[string_intro4]
@@ -204,25 +195,12 @@ main_baud_loop:
 ; -----------------------------------------------------------------------------------
 start_console:
             ; print menu
-            bl    uart_linebreak__
-            ldil  r2, low[string_menu_hd]
-            ldih  r2, high[string_menu_hd]
-            bl    uart_print_br__
             ldil  r2, low[string_menu0]
             ldih  r2, high[string_menu0]
-            bl    uart_print_br__
+            bl    uart_print__
             ldil  r2, low[string_menup]
             ldih  r2, high[string_menup]
-            bl    uart_print_br__
-            ldil  r2, low[string_menud]
-            ldih  r2, high[string_menud]
-            bl    uart_print_br__
-            ldil  r2, low[string_menur]
-            ldih  r2, high[string_menur]
-            bl    uart_print_br__
-            ldil  r2, low[string_menuw]
-            ldih  r2, high[string_menuw]
-            bl    uart_print_br__
+            bl    uart_print__
 
 console_input:
             ldil  r2, low[string_menux]
@@ -233,7 +211,7 @@ console_input:
 console_wait:
             bl    uart_receivebyte__				; wait for user input
             mov   r6, r0							; backup for selector
-            mov   r1, r6							; backup for echo
+            mov   r1, r0							; backup for echo
             bl    uart_sendbyte__					; echo selection
             bl    uart_linebreak__
 
@@ -255,40 +233,53 @@ console_selector:
             cmp   r1, r6
             beq   boot_memory						; boot from memory
 
+            ldil  r1, #'4'
+            cmp   r1, r6
+            beq   boot_wishbone						; boot from wishbone device
+
+            ldil  r1, #'?'
+            cmp   r1, r6
+            bne   #+5
+            ldil  r2, low[keepin_it_country]
+            ldih  r2, high[keepin_it_country]
+            bl    uart_print__
+            b     console_input
+
             ldil  r5, low[burn_eeprom]
             ldih  r5, high[burn_eeprom]
             ldil  r1, #'p'
             cmp   r1, r6
             rbaeq r5								; program eeprom
 
-            ldil  r5, low[mem_dump]
-            ldih  r5, high[mem_dump]
             ldil  r1, #'d'
             cmp   r1, r6
-            rbaeq r5								; ram dump
+            beq   mem_dump						    ; ram dump
 
             ldil  r5, low[wb_dump]
             ldih  r5, high[wb_dump]
             ldil  r1, #'w'
             cmp   r1, r6
-            rbaeq r5								; ram dump
+            rbaeq r5								; wishbone dump
 
             ldil  r1, #'r'
             cmp   r1, r6
             bne   console_input						; invalid input
 
-            ; do 'hard' reset
+            ; HARD restart - back to bootloader page
             clr   r0
+            ldil  r1, #0x00
+            ldih  r1, #0x80
+            mcr   #1, sys1_core, r1, #1
             gt    r0
 
-
+keepin_it_country: .stringz "Keepin' it country!\n"
 ; -----------------------------------------------------------------------------------
 ; Booting from memory
 ; -----------------------------------------------------------------------------------
 boot_memory:
             ldil  r2, low[string_booting]
             ldih  r2, high[string_booting]
-            bl    uart_print_br__
+            bl    uart_print__
 
             ; print no image info on start-up
             clr   r0
@@ -300,12 +291,84 @@ boot_memory:
 ; -----------------------------------------------------------------------------------
 ; Intermediate Brach Stops - Stop 2
 ; -----------------------------------------------------------------------------------
-uart_print_br__:		b uart_print_br_
 uart_print__:			b uart_print_
 uart_linebreak__:		b uart_linebreak_
 uart_sendbyte__:		b uart_sendbyte_
 uart_receivebyte__:		b uart_receivebyte_
 print_hex_string__:     b print_hex_string_
+
+
+; -----------------------------------------------------------------------------------
+; Booting from Wishbone device
+; -----------------------------------------------------------------------------------
+boot_wishbone:
+            ; get and set base address
+            ldil  r2, low[string_ewbadr]
+            ldih  r2, high[string_ewbadr]
+            bl    uart_print_
+
+            ; get and set base address (32-bit)
+            bl    receive_hex_word_
+            mcr   #1, com1_core, r4, #2             ; set high part of base address
+            bl    receive_hex_word_
+            mcr   #1, com1_core, r4, #1             ; set low part of base address
+            ldil  r0, low[user_wait]             ; wait for user to acknowledge
+            ldih  r0, high[user_wait]
+            gtl   r0
+            bl    uart_linebreak_
+
+            ; get signature
+            bl    wb_read_word__                   ; get word from Wishbone
+            ldil  r0, #0xFE
+            ldih  r0, #0xCA
+            cmp   r0, r6
+            bne   signature_err_
+
+            ; get size
+            bl    wb_read_word__                   ; get word from Wishbone
+            sft   r6, r6, #lsl                      ; size in words!
+            stub  r0, r6
+
+            ; get checksum
+            bl    wb_read_word__                   ; get word from Wishbone
+            stub  r1, r6
+
+            ; get image name
+            bl    wb_read_word__                   ; get word from Wishbone
+            stub  r2, r6
+
+            bl    wb_read_word__                   ; get word from Wishbone
+            stub  r3, r6
+
+            bl    wb_read_word__                   ; get word from Wishbone
+            stub  r4, r6
+
+            bl    wb_read_word__                   ; get word from Wishbone
+            stub  r5, r6
+
+            bl    wb_read_word__                   ; get word from Wishbone
+            stub  r6, r6
+
+            ; download program
+            ldil  r5, #0							; base address MEMORY = 0x0000
+            mcr   #1, sys1_core, r5, #2				; set system d-page
+            mcr   #1, sys0_core, r5, #5				; set checksum = 0
+
+boot_wishbone_loop:
+            bl    wb_read_word__                    ; get word
+            str   r6, r5, +#2, post, !				; save to data mem
+
+            ; update checksum
+            mrc   #1, r0, sys0_core, #5				; get checksum
+            eor   r0, r0, r6
+            mcr   #1, sys0_core, r0, #5				; set checksum
+
+            ; check size counter
+            ldub  r0, r0
+            cmp   r5, r0							; done?
+            bne   boot_wishbone_loop
+
+            b     download_completed
 
 
 ; -----------------------------------------------------------------------------------
@@ -315,15 +378,11 @@ boot_eeprom:
             ; intro
             ldil  r2, low[string_booting]
             ldih  r2, high[string_booting]
-            bl    uart_print_br_
+            bl    uart_print_
 
             ; get signature
             ldil  r2, #0
-            bl    spi_eeprom_read_byte__			; read byte from eeprom
-            sft   r5, r3, #swp
-            ldil  r2, #1
-            bl    spi_eeprom_read_byte__			; read byte from eeprom
-            orr   r5, r5, r3
+            bl    eeprom_get_word                   ; get word from EEPROM
             ldil  r0, #0xFE
             ldih  r0, #0xCA
             cmp   r0, r5
@@ -331,102 +390,77 @@ boot_eeprom:
 
             ; get size
             ldil  r2, #2
-            bl    spi_eeprom_read_byte__			; read byte from eeprom
-            sft   r5, r3, #swp
-            ldil  r2, #3
-            bl    spi_eeprom_read_byte__			; read byte from eeprom
-            orr   r5, r5, r3
+            bl    eeprom_get_word                   ; get word from EEPROM
+            sft   r5, r5, #lsl                      ; size in words!
             stub  r0, r5
 
             ; get checksum
             ldil  r2, #4
-            bl    spi_eeprom_read_byte__			; read byte from eeprom
-            sft   r5, r3, #swp
-            ldil  r2, #5
-            bl    spi_eeprom_read_byte__			; read byte from eeprom
-            orr   r5, r5, r3
+            bl    eeprom_get_word                   ; get word from EEPROM
             stub  r1, r5
 
             ; get image name
             ldil  r2, #6
-            bl    spi_eeprom_read_byte__			; read byte from eeprom
-            sft   r5, r3, #swp
-            ldil  r2, #7
-            bl    spi_eeprom_read_byte__			; read byte from eeprom
-            orr   r5, r5, r3
+            bl    eeprom_get_word                   ; get word from EEPROM
             stub  r2, r5
 
             ldil  r2, #8
-            bl    spi_eeprom_read_byte__			; read byte from eeprom
-            sft   r5, r3, #swp
-            ldil  r2, #9
-            bl    spi_eeprom_read_byte__			; read byte from eeprom
-            orr   r5, r5, r3
+            bl    eeprom_get_word                   ; get word from EEPROM
             stub  r3, r5
 
             ldil  r2, #10
-            bl    spi_eeprom_read_byte__			; read byte from eeprom
-            sft   r5, r3, #swp
-            ldil  r2, #11
-            bl    spi_eeprom_read_byte__			; read byte from eeprom
-            orr   r5, r5, r3
+            bl    eeprom_get_word                   ; get word from EEPROM
             stub  r4, r5
 
             ldil  r2, #12
-            bl    spi_eeprom_read_byte__			; read byte from eeprom
-            sft   r5, r3, #swp
-            ldil  r2, #13
-            bl    spi_eeprom_read_byte__			; read byte from eeprom
-            orr   r5, r5, r3
+            bl    eeprom_get_word                   ; get word from EEPROM
             stub  r5, r5
 
             ldil  r2, #14
-            bl    spi_eeprom_read_byte__			; read byte from eeprom
-            sft   r5, r3, #swp
-            ldil  r2, #15
-            bl    spi_eeprom_read_byte__			; read byte from eeprom
-            orr   r5, r5, r3
+            bl    eeprom_get_word                   ; get word from EEPROM
             stub  r6, r5
 
             ; download program
-            ldil  r6, #0							; base address MEMORY = 0x0000
-            mcr   #1, sys1_core, r6, #2				; set system d-page
-            stub  r7, r6							; init checksum computation
+            ldil  r4, #0							; base address MEMORY = 0x0000
+            mcr   #1, sys1_core, r4, #2				; set system d-page
+            mcr   #1, sys0_core, r4, #5				; set checksum = 0
 
 boot_eeprom_loop:
-            ldil  r0, #16
-            add   r2, r6, r0						; high = base EEPROM = base MEM +16
-            bl    spi_eeprom_read_byte__			; get high-byte
-            sft   r5, r3, #swp						; swap bytes
-
-            ldil  r0, #17
-            add   r2, r6, r0						; low = base EEPROM = base MEM +17
-            bl    spi_eeprom_read_byte__			; get low-byte
-            orr   r5, r5, r3						; construct word
-
-            str   r5, r6, +#2, post, !				; save to data mem
+            ldil  r0, #16                           ; base offset
+            add   r2, r4, r0						; access EEPROM = MEM_pnt +16
+            bl    eeprom_get_word                   ; get word from (address in r2)
+            str   r5, r4, +#2, post, !				; save to data mem
 
             ; update checksum
-            ldub  r0, r7
+            mrc   #1, r0, sys0_core, #5				; get checksum
             eor   r0, r0, r5
-            stub  r7, r0
+            mcr   #1, sys0_core, r0, #5				; set checksum
 
+            ; check size counter
             ldub  r0, r0
-            cmp   r6, r0							; done?
+            cmp   r4, r0							; done?
             bne   boot_eeprom_loop
 
             b     download_completed
 
 
+            ; get word from (address in r2)
+eeprom_get_word:
+            mov   r6, lr
+            bl    spi_eeprom_read_byte__			; read byte from eeprom
+            sft   r5, r3, #swp
+            inc   r2, r2, #1
+            bl    spi_eeprom_read_byte__			; read byte from eeprom
+            orr   r5, r5, r3
+            ret   r6
+
+
 ; -----------------------------------------------------------------------------------
 ; Booting from UART
 ; -----------------------------------------------------------------------------------
-boot_uart:	ldil  r2, low[string_booting]
-            ldih  r2, high[string_booting]
-            bl    uart_print_br_
-            ldil  r2, low[string_boot_wimd]
+boot_uart:	ldil  r2, low[string_boot_wimd]
             ldih  r2, high[string_boot_wimd]
-            bl    uart_print_br_
+            bl    uart_print_
 
             ; check signature (2 byte)
             bl    uart_receivebyte_					; get high-byte
@@ -439,69 +473,48 @@ boot_uart:	ldil  r2, low[string_booting]
             bne   signature_err_
 
             ; get program size (2 byte)
-            bl    uart_receivebyte_					; get high-byte
-            sft   r1, r0, #swp						; swap bytes
-            bl    uart_receivebyte_					; get low-byte
-            orr   r1, r1, r0						; construct word
+            bl    uart_get_word                     ; get a word from console
             sft   r1, r1, #lsl						; #bytes = 2*#words
             stub  r0, r1
 
             ; get checksum (2 byte)
-            bl    uart_receivebyte_					; get high-byte
-            sft   r1, r0, #swp						; swap bytes
-            bl    uart_receivebyte_					; get low-byte
-            orr   r1, r1, r0						; construct word
+            bl    uart_get_word                     ; get a word from console
             stub  r1, r1
 
             ; get image name (10 byte)
-            bl    uart_receivebyte_					; get high-byte
-            sft   r1, r0, #swp						; swap bytes
-            bl    uart_receivebyte_					; get low-byte
-            orr   r1, r1, r0						; construct word
+            bl    uart_get_word                     ; get a word from console
             stub  r2, r1
-            bl    uart_receivebyte_					; get high-byte
-            sft   r1, r0, #swp						; swap bytes
-            bl    uart_receivebyte_					; get low-byte
-            orr   r1, r1, r0						; construct word
+            bl    uart_get_word                     ; get a word from console
             stub  r3, r1
-            bl    uart_receivebyte_					; get high-byte
-            sft   r1, r0, #swp						; swap bytes
-            bl    uart_receivebyte_					; get low-byte
-            orr   r1, r1, r0						; construct word
+            bl    uart_get_word                     ; get a word from console
             stub  r4, r1
-            bl    uart_receivebyte_					; get high-byte
-            sft   r1, r0, #swp						; swap bytes
-            bl    uart_receivebyte_					; get low-byte
-            orr   r1, r1, r0						; construct word
-            stub  r5 r1
-            bl    uart_receivebyte_					; get high-byte
-            sft   r1, r0, #swp						; swap bytes
-            bl    uart_receivebyte_					; get low-byte
-            orr   r1, r1, r0						; construct word
+            bl    uart_get_word                     ; get a word from console
+            stub  r5, r1
+            bl    uart_get_word                     ; get a word from console
             stub  r6, r1
 
             ; init download
             clr   r5								; address = 0x00000000
             mcr   #1, sys1_core, r5, #2				; set system d-page
-            stub  r7, r5							; init checksum computation
+            mcr   #1, sys0_core, r5, #5				; set checksum = 0
 
             ; downloader
 uart_downloader:
-            bl    uart_receivebyte_					; get high-byte
-            sft   r1, r0, #swp						; swap bytes
-            bl    uart_receivebyte_					; get low-byte
-            orr   r1, r1, r0						; construct word
+            bl    uart_get_word                     ; get a word from console
             str   r1, r5, +#2, post, !				; save to data mem
 
             ; update checksum
-            ldub  r0, r7
+            mrc   #1, r0, sys0_core, #5				; get checksum
             eor   r0, r0, r1
-            stub  r7, r0
+            mcr   #1, sys0_core, r0, #5				; set checksum
 
             ldub  r0, r0
             cmp   r5, r0							; done?
             bne   uart_downloader
 
+
+; image download completed - prepare image launch
+; ---------------------------------------------------
 download_completed:
             ; re-init system d page
             mrc   #1, r0, sys1_core, #1				; get sys i-page
@@ -510,10 +523,10 @@ download_completed:
             ; download completed
             ldil  r2, low[string_done]
             ldih  r2, high[string_done]
-            bl    uart_print_br_
+            bl    uart_print_
 
             ; transfer done - check checksum
-            ldub  r0, r7
+            mrc   #1, r0, sys0_core, #5				; get checksum
             ldub  r1, r1
             cmp   r0, r1
             beq   start_image
@@ -521,19 +534,23 @@ download_completed:
             ; checksum error!
             ldil  r2, low[string_err_check]
             ldih  r2, high[string_err_check]
-            bl    uart_print_br_
-            ldil  r2, low[string_err_res]
-            ldih  r2, high[string_err_res]
-            bl    uart_print_br_
-            bl    uart_receivebyte_					; wait for any key input
-            clr   r0
-            gt    r0								; restart
+            bl    uart_print_
+            b     resume_error_					    ; resume error
+
+
+            ; get a full word via console
+uart_get_word:
+            mov   r6, lr
+            bl    uart_receivebyte_					; get high-byte
+            sft   r1, r0, #swp						; swap bytes
+            bl    uart_receivebyte_					; get low-byte
+            orr   r1, r1, r0						; construct word
+            ret   r6
 
 
 ; -----------------------------------------------------------------------------------
 ; Intermediate Brach Stops - Stop 1
 ; -----------------------------------------------------------------------------------
-uart_print_br_:			b uart_print_br
 uart_print_:			b uart_print
 uart_linebreak_:		b uart_linebreak
 uart_sendbyte_:			b uart_sendbyte
@@ -542,12 +559,22 @@ spi_eeprom_read_byte__:	b spi_eeprom_read_byte_
 signature_err_:         b signature_err
 console_input_:         b console_input
 print_hex_string_:      b print_hex_string0
+wb_read_word__:         b wb_read_word_
+receive_hex_word_:      b receive_hex_word
 
 
 ; -----------------------------------------------------------------------------------
 ; Start image from memory
 ; -----------------------------------------------------------------------------------
 start_image:
+            ; print checksum
+            ldil  r2, low[string_checksum]
+            ldih  r2, high[string_checksum]
+            bl    uart_print
+            mrc   #1, r4, sys0_core, #5				; get checksum
+            bl    print_hex_string                  ; print computed checksum
+            bl    uart_linebreak
+
             ldil  r2, low[string_start_im]
             ldih  r2, high[string_start_im]
             bl    uart_print
@@ -559,66 +586,49 @@ start_image:
             ldil  r1, #34							;'"'
             bl    uart_sendbyte
             ldub  r1, r2
-            sft   r1, r1, #swp
-            bl    uart_sendbyte
-            sft   r1, r1, #swp
-            bl    uart_sendbyte
+            bl    start_image_print_name_sub
             ldub  r1, r3
-            sft   r1, r1, #swp
-            bl    uart_sendbyte
-            sft   r1, r1, #swp
-            bl    uart_sendbyte
+            bl    start_image_print_name_sub
             ldub  r1, r4
-            sft   r1, r1, #swp
-            bl    uart_sendbyte
-            sft   r1, r1, #swp
-            bl    uart_sendbyte
+            bl    start_image_print_name_sub
             ldub  r1, r5
-            sft   r1, r1, #swp
-            bl    uart_sendbyte
-            sft   r1, r1, #swp
-            bl    uart_sendbyte
+            bl    start_image_print_name_sub
             ldub  r1, r6
-            sft   r1, r1, #swp
-            bl    uart_sendbyte
-            sft   r1, r1, #swp
-            bl    uart_sendbyte
+            bl    start_image_print_name_sub
             ldil  r1, #34							;'"'
             bl    uart_sendbyte
             bl    uart_linebreak
 
-            ; print checksum
-            ldil  r2, low[string_checksum]
-            ldih  r2, high[string_checksum]
-            bl    uart_print
-            ldub  r4, r7							; print computed checksum
-            bl    print_hex_string0
-
-            ; some final line breaks
+            ; start the image
 start_image_no_text:
             bl    uart_linebreak
-            bl    uart_linebreak
-
-            CLR   R0								; ZERO!
 
             ; re-init MSR
-            sbr   r3, r0, #14						; prv_sys_mode
-            sbr   r3, r3, #15						; sys_mode
-            stsr  r3
+            ldil  r1, #0x00
+            ldih  r1, #0xC0                         ; current/prev mode = sys
+            stsr  r1
+
+            CLR   R0								; ZERO!
 
             ; clear alive LED
             mcr   #1, com0_core, r0, #7				; set system output
 
-            ; set IRQ base address
-            mcr   #1, sys1_core, r0, #0
-
             ; set mmu pages, address: 0x0000
-            mcr   #1, sys1_core, r0, #0
+            mcr   #1, sys1_core, r0, #0             ; irq base address
             mcr   #1, sys1_core, r0, #3
             mcr   #1, sys1_core, r0, #4
             mcr   #1, sys1_core, r0, #2				; d-page - set first
             mcr   #1, sys1_core, r0, #1				; i-page
             gt    r0								; start image at 0x0000 & 0x0000
+
+
+start_image_print_name_sub:
+            mov   r6, lr
+            sft   r1, r1, #swp
+            bl    uart_sendbyte
+            sft   r1, r1, #swp
+            bl    uart_sendbyte
+            ret   r6
 
 
 ; -----------------------------------------------------------------------------------
@@ -632,18 +642,11 @@ mem_dump:	ldil  r2, low[string_edpage]
             bl    receive_hex_word
 
             ; wait for enter/abort
-mem_dump_wait:
-            bl    uart_receivebyte
-            ldil  r1, #0x0D							; CR - enter
-            cmp   r0, r1
-            beq   mem_dump_continue
-            ldil  r1, #0x08							; Backspace - abort
-            cmp   r0, r1
-            bne   mem_dump_wait
-            bl    uart_linebreak
-            b     console_input_					; restart terminal prompt
+            ldil  r2, low[user_wait]
+            ldih  r2, high[user_wait]
+            gtl   r2
 
-mem_dump_continue:
+            ; let's go
             mcr   #1, sys1_core, r4, #2				; set d-page
             bl    uart_linebreak
 
@@ -660,7 +663,7 @@ mem_dump_loop:
             ldil  r1, #36							; '$'
             bl    uart_sendbyte
             mov   r4, r5
-            bl    print_hex_string					; print 4hex address
+            bl    print_hex_string					; print 4hex byte address
             ldil  r1, #58							; ':'
             bl    uart_sendbyte
             ldil  r1, #32							; ' '
@@ -743,10 +746,10 @@ burn_eeprom:
             ; we are ready! - waiting for image data...
             ldil  r2, low[string_prog_eep]
             ldih  r2, high[string_prog_eep]
-            bl    uart_print_br
+            bl    uart_print
             ldil  r2, low[string_boot_wimd]
             ldih  r2, high[string_boot_wimd]
-            bl    uart_print_br
+            bl    uart_print
 
             ; get signature
             bl    uart_receivebyte					; get high-byte
@@ -760,11 +763,9 @@ burn_eeprom:
 
             ; write signature (2 bytes)
             ldil  r2, #0
-            ldil  r3, #0xCA
-            bl    spi_eeprom_write_byte
-            ldil  r2, #1
-            ldil  r3, #0xFE
-            bl    spi_eeprom_write_byte
+            ldil  r5, #0xFE
+            ldih  r5, #0xCA
+            bl    eeprom_write_word                 ; write word to eeprom
 
             ; get image size
             bl    uart_receivebyte					; get high-byte
@@ -776,11 +777,7 @@ burn_eeprom:
 
             ; write image size (2 bytes)
             ldil  r2, #2
-            sft   r3, r5, #swp
-            bl    spi_eeprom_write_byte
-            ldil  r2, #3
-            mov   r3, r5
-            bl    spi_eeprom_write_byte
+            bl    eeprom_write_word                 ; write word to eeprom
 
             ; get checksum
             bl    uart_receivebyte					; get high-byte
@@ -791,11 +788,7 @@ burn_eeprom:
 
             ; write checksum (2 bytes)
             ldil  r2, #4
-            sft   r3, r5, #swp
-            bl    spi_eeprom_write_byte
-            ldil  r2, #5
-            mov   r3, r5
-            bl    spi_eeprom_write_byte
+            bl    eeprom_write_word                 ; write word to eeprom
 
             ; write image name (10 bytes)
             ldil  r2, #6							; base address
@@ -835,12 +828,23 @@ burn_eeprom_image_data:
             ; we are done!
             ldil  r2, low[string_done]
             ldih  r2, high[string_done]
-            bl    uart_print_br
+            bl    uart_print
 
             ; return to main console
             ldil  r5, low[start_console]
             ldih  r5, high[start_console]
             gt    r5
+
+
+            ; write word in r5 to eeprom, address in r2
+eeprom_write_word:
+            mov   r6, lr
+            sft   r3, r5, #swp
+            bl    spi_eeprom_write_byte
+            inc   r2, r2, #1
+            mov   r3, r5
+            bl    spi_eeprom_write_byte
+            ret   r6
 
 
 ; -----------------------------------------------------------------------------------
@@ -849,13 +853,9 @@ burn_eeprom_image_data:
 signature_err:
             ldil  r2, low[string_err_image]
             ldih  r2, high[string_err_image]
-            bl    uart_print_br
-            ldil  r2, low[string_err_res]
-            ldih  r2, high[string_err_res]
-            bl    uart_print_br
-            bl    uart_receivebyte
-            clr   r0
-            gt    r0								; restart
+            bl    uart_print
+resume_error_:                                      ; interm. branch stop
+            b     resume_error				        ; resume error
 
 
 ; *****************************************************************************************************************
@@ -866,29 +866,17 @@ signature_err:
 ; Intermediate Brach Stops
 ; -----------------------------------------------------------------------------------
 spi_eeprom_read_byte0:	b spi_eeprom_read_byte
-
-
-; --------------------------------------------------------------------------------------------------------
-; Print char-string (bytes) via CP1.COM_0.UART and send linebreak
-; Arguments: r2 = address of string (string must be zero-terminated!)
-; Results: -
-; Used registers: r0, r1, r2, r3, r4, lr
-uart_print_br:
-; --------------------------------------------------------------------------------------------------------
-            ldil  r3, #0xFF
-            mov   r4, lr
-            b     uart_print_loop
+wb_read_word_:          b wb_read_word
 
 
 ; --------------------------------------------------------------------------------------------------------
 ; Print char-string (bytes) via CP1.COM_0.UART
 ; Arguments: r2 = address of string (string must be zero-terminated!)
 ; Results: -
-; Used registers: r0, r1, r2, r3, r4, lr
+; Used registers: r0, r1, r2, r3, lr
 uart_print:
 ; --------------------------------------------------------------------------------------------------------
-            clr   r3
-            mov   r4, lr
+            mov   r3, lr
             
 uart_print_loop:
             ldr   r0, r2, +#1, post, !				; get one string byte
@@ -901,10 +889,7 @@ uart_print_loop:
             b     uart_print_loop
 
 uart_print_loop_end:
-            mov   lr, r4
-            teq   r3, r3							; do linebreak?
-            rbaeq lr
-;			b     uart_linebreak
+            ret   r3
 
 
 ; --------------------------------------------------------------------------------------------------------
@@ -1055,18 +1040,19 @@ print_hex_string:
             ret   r6
 
 ; compute hex-char from 4-bit value of r2, result in r1
-conv_hex_comp:	ldil r1, #0x0f					; mask for lowest 4 bit
-                and  r2, r2, r1
+conv_hex_comp:
+            ldil  r1, #0x0f					        ; mask for lowest 4 bit
+            and   r2, r2, r1
 
-                ldil r1, #9
-                cmp  r1, r2
-                bcs  #+3
+            ldil  r1, #9
+            cmp   r1, r2
+            bcs   #+3
 
-                ldil r1, #48					; this is a '0'
-                b    #+2
-                ldil r1, #55					; this is an 'A'-10
-                add  r1, r1, r2					; resulting char in lower byte
-                ret  lr
+            ldil  r1, #48					        ; this is a '0'
+            b     #+2
+            ldil  r1, #55					        ; this is an 'A'-10
+            add   r1, r1, r2				        ; resulting char in lower byte
+            ret   lr
 
 
 ; --------------------------------------------------------------------------------------------------------
@@ -1127,13 +1113,8 @@ spi_eeprom_write_byte:
             ; EEPROM ACCESS ERROR!
             ldil  r2, low[string_err_eep]
             ldih  r2, high[string_err_eep]
-            bl    uart_print_br
-            ldil  r2, low[string_err_res]
-            ldih  r2, high[string_err_res]
-            bl    uart_print_br
-            bl    uart_receivebyte
-            clr   r0
-            gt    r0								; restart
+            bl    uart_print
+            b     resume_error					    ; resume error
 
 spi_eeprom_write:
             ; send write instruction and
@@ -1214,7 +1195,7 @@ spi_eeprom_read_byte:
             ; read data byte (16 bit trans)
             ; -------------------------------------------
             mov   r0, r2							; copy address
-            ldih  r0, #0x00							; data tranfer dummy
+            ldih  r0, #0x00							; data transfer dummy
             sft   r0, r0, #swp						; swap data and address bytes
             bl    spi_trans							; iniatiate transmission
 
@@ -1226,6 +1207,61 @@ spi_eeprom_read_byte:
             ret   r1
 
 
+; --------------------------------------------------------------------------------------------------------
+; Reads 1 word from the Wishbone network (base address must be set before, word address increment)
+; Arguments: -
+; Results:
+;  r6 = data
+; Used registers: r0, r1, r6 ,lr
+wb_read_word:
+; --------------------------------------------------------------------------------------------------------
+            cdp   #1, com1_core, com1_core, #0      ; initiate read-transfer
+
+            mrc   #1, r0, com1_core, #0				; get WB status reg
+            stb   r0, #6                            ; busy flag -> t-flag
+            bts   #-2                               ; repeat until data is ready
+
+            ; check word
+            ldil  r6, #0b00000110                   ; bus or timeout flag set?
+            ands  r0, r0, r6
+            bne   wb_read_word_err
+
+            ; increment base address
+            mrc   #1, r1, com1_core, #1				; get WB base adr low
+            mrc   #1, r6, com1_core, #2				; get WB base adr high
+            clr   r0
+            incs  r1, r1, #2                        ; inc 2 = one word
+            adc   r6, r6, r0
+            mcr   #1, com1_core, r1, #1             ; set low part of base address
+            mcr   #1, com1_core, r6, #2             ; set high part of base address
+
+            mrc   #1, r6, com1_core, #4				; get data
+            ret   lr
+
+            ; WB access error (ERR or no ACK)
+wb_read_word_err:
+            ldil  r2, low[string_err_wb]
+            ldih  r2, high[string_err_wb]
+            bl    uart_print
+;           b     resume_error
+
+
+; -----------------------------------------------------------------------------------
+; Fatal error! Press key to resume (restart bootloader)
+; -----------------------------------------------------------------------------------
+resume_error:
+            ldil  r2, low[string_err_res]
+            ldih  r2, high[string_err_res]
+            bl    uart_print
+            bl    uart_receivebyte					; wait for any key input
+            clr   r0
+            gt    r0								; restart
+
+
+; *****************************************************************************************************************
+; Wishbone Access
+; *****************************************************************************************************************
+
 ; -----------------------------------------------------------------------------------
 ; Wisbone Dump
 ; -----------------------------------------------------------------------------------
@@ -1233,36 +1269,42 @@ wb_dump:    ldil  r2, low[string_ewbadr]
             ldih  r2, high[string_ewbadr]
             bl    uart_print
 
-            ; get and set address (32-bit)
+            ; get and set base address (32-bit)
             bl    receive_hex_word
             mcr   #1, com1_core, r4, #2             ; set high part of base address
             bl    receive_hex_word
             mcr   #1, com1_core, r4, #1             ; set low part of base address
+            bl    user_wait                         ; wait for user
+            bl    uart_linebreak
 
-wb_dump_wait:
-            ; execute?
-            bl    uart_receivebyte
-            ldil  r1, #0x0D							; CR - enter
-            cmp   r0, r1
-            beq   wb_dump_proceed
-
-            ; abort?
-            ldil  r1, #0x08							; Backspace - abort
-            cmp   r0, r1
-            beq   wb_dump_end
-            b     wb_dump_wait
+            ; get number of entries (16-bit
+            ldil  r2, low[string_ewbnum]
+            ldih  r2, high[string_ewbnum]
+            bl    uart_print
+            bl    receive_hex_word
+            mov   r5, r4
+            bl    user_wait                         ; wait for user
 
             ; download word from wishbone net
-wb_dump_proceed:
-            bl    wb_read_word
-            mov   r6, r0
+wb_dump_loop:
+            teq   r5, r5
+            beq   wb_dump_end
+            dec   r5, r5, #1
 
-            ; print it
-            ldil  r2, low[string_data]
-            ldih  r2, high[string_data]
+            bl    uart_linebreak
+            bl    wb_read_word
+
+            ldil  r2, low[string_wbhexpre]
+            ldih  r2, high[string_wbhexpre]
             bl    uart_print
-            mov   r4, r6
+            mov   r4, r6                            ; data from wishbone
             bl    print_hex_string
+
+            ; user input?
+            mrc   #1, r1, com0_core, #0				; get uart status/data register
+            stb   r1, #15							; copy inverted uart rx_ready flag to T-flag
+            bts   #+2
+            b     wb_dump_loop
 
             ; return to main console
 wb_dump_end:
@@ -1271,52 +1313,44 @@ wb_dump_end:
             ldih  r5, high[console_input]
             gt    r5
 
-
-; --------------------------------------------------------------------------------------------------------
-; Reads 1 word from the Wishbone network (base address must be set before, auto address increment)
-; Arguments: -
-; Results:
-;  r0 = data
-; Used registers: r0 ,lr
-wb_read_word:
-; --------------------------------------------------------------------------------------------------------
-            cdp   #1, com1_core, com1_core, #0      ; initiate read-transfer
-            mrc   #1, r0, com1_core, #0				; get WB status reg
-            stb   r0, #6                            ; busy flag -> t-flag
-            bts   #-2                               ; repeat until data is ready
-
-            mrc   #1, r0, com1_core, #4				; get data
-            ret   lr
+            ; wait for user to cancel/proceed
+user_wait:  mov   r2, lr
+user_wait_: bl    uart_receivebyte
+            ldil  r1, #0x0D							; CR - enter
+            cmp   r0, r1                            ; execute?
+            rbaeq r2
+            ldil  r1, #0x08							; Backspace - abort
+            cmp   r0, r1                            ; abort?
+            beq   wb_dump_end
+            b     user_wait_
 
 
 ; *****************************************************************************************************************
 ; ROM: Text strings
 ; *****************************************************************************************************************
+string_intro0:    .stringz "\n\nAtlas-2K Bootloader - V20140414\nby Stephan Nolting, stnolting@gmail.com\nwww.opencores.org/project,atlas_core\n"
+string_intro3:    .stringz "\nBoot page: 0x"
+string_intro4:    .stringz "\nClock(Hz): 0x"
 
-string_intro0:    .stringz "Atlas-2K Bootloader - V20140410\nby Stephan Nolting, stnolting@gmail.com\nwww.opencores.org/project,atlas_core\n"
-string_intro3:    .stringz "Bootloader @ 0x"
-string_intro4:    .stringz "Clock (Hz): 0x"
-
-string_booting:   .stringz "Booting..."
-string_prog_eep:  .stringz "Burning EEPROM"
-string_boot_wimd: .stringz "Waiting for image data..."
+string_booting:   .stringz "Booting\n"
+string_prog_eep:  .stringz "Burn EEPROM\n"
+string_boot_wimd: .stringz "Waiting for data...\n"
 string_start_im:  .stringz "Starting image "
-string_done:      .stringz "Download completed!"
-string_edpage:    .stringz "Enter page (4hex): 0x"
-string_ewbadr:    .stringz "Enter addr (8hex): 0x"
-string_checksum:  .stringz "Checksum: 0x"
-string_data:      .stringz "\n-> 0x"
+string_done:      .stringz "Download complete\n"
+string_edpage:    .stringz "Page (4h): $"
+string_ewbadr:    .stringz "Addr (8h): $"
+string_ewbnum:    .stringz "#words (4h): $"
+string_checksum:  .stringz "Checksum: $"
+string_wbhexpre:  .stringz " -> $"
 
-string_menu_hd:   .stringz "cmd/boot-switch"
-string_menu0:     .stringz " 0/'00': Restart console\n 1/'01': Boot from UART\n 2/'10': Boot from EEPROM\n 3/'11': Boot from memory"
-string_menup:     .stringz " p: Burn EEPROM"
-string_menud:     .stringz " d: RAM dump"
-string_menur:     .stringz " r: Reset"
-string_menuw:     .stringz " w: WB dump"
+
+string_menu0:     .stringz "\ncmd/boot-switch:\n 0/'00': Restart console\n 1/'01': Boot UART\n 2/'10': Boot EEPROM\n 3/'11': Boot memory\n"
+string_menup:     .stringz " 4: Boot WB\n p: Burn EEPROM\n d: RAM dump\n r: Reset\n w: WB dump\n"
 string_menux:     .stringz "cmd:> "
 
-string_err_image: .stringz "IMAGE ERR!"
-string_err_irq:   .stringz "\nIRQ ERR!"
-string_err_check: .stringz "CHECKSUM ERR!"
-string_err_eep:   .stringz "SPI/EEPROM ERR!"
-string_err_res:   .stringz "Press any key"
+string_err_image: .stringz "IMAGE ERR!\n"
+string_err_irq:   .stringz "\nIRQ ERR!\n"
+string_err_check: .stringz "CHECKSUM ERR!\n"
+string_err_eep:   .stringz "SPI/EEPROM ERR!\n"
+string_err_wb:    .stringz "WB BUS ERR!\n"
+string_err_res:   .stringz "Press any key\n"

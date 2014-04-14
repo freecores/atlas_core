@@ -42,7 +42,7 @@ using namespace std;
  int  find_offset(char *input_label, int line);
  int  conv_imm(char *input, int max_val, int line);
  void get_labels(const char *input_file);
- int  assemble(const char *input_file, const char *output_file, const char *bin_output_file);
+ int  assemble(const char *input_file, const char *output_file, const char *bin_output_file, const char *boot_output_file);
  int  main(int argc, char *argv[]);
  
  
@@ -1214,9 +1214,9 @@ void get_labels(const char *input_file){
 // *****************************************************************************************************************
 // Assemble pre-processor file
 // *****************************************************************************************************************
-int assemble(const char *input_file, const char *output_file, const char *bin_output_file){
+int assemble(const char *input_file, const char *output_file, const char *bin_output_file, const char *boot_output_file){
 
-    FILE *data_in, *data_out, *bin_data_out;
+    FILE *data_in, *data_out, *bin_data_out, *boot_out;
     char line_input[512];
     int  index = 0;
     int  i = 0, j = 0;
@@ -1224,6 +1224,7 @@ int assemble(const char *input_file, const char *output_file, const char *bin_ou
     char *cut_out;
     char line_string[256];
     char tmp_string[32];
+    char buf_string[32];
     char arg[10][64];
     int opcode;
     int temp;
@@ -1236,18 +1237,25 @@ int assemble(const char *input_file, const char *output_file, const char *bin_ou
     }
     data_out = fopen(output_file, "w");
     if(data_out == NULL){
-      printf("ASSEMBLE: Output file error_cnt!\n");
+      printf("ASSEMBLE: Output file error!\n");
       exit(1);
     }
     bin_data_out = fopen(bin_output_file, "wb");
-    if(data_out == NULL){
-      printf("ASSEMBLE: Binary output file error_cnt!\n");
+    if(bin_data_out == NULL){
+      printf("ASSEMBLE: Binary output file error!\n");
+      exit(1);
+    }
+    boot_out = fopen(boot_output_file, "wb");
+    if(boot_out == NULL){
+      printf("ASSEMBLE: Boot output file error!\n");
       exit(1);
     }
 
 	// reserve memory for header (16 byte)
 	for (i=0; i<16; i++)
 		fputc(char(0), bin_data_out);
+	for (i=0; i<8; i++)
+		fputs("000000 => x\"0000\",\n", boot_out);
 
     // get line
     line = 1;
@@ -1833,6 +1841,9 @@ int assemble(const char *input_file, const char *output_file, const char *bin_ou
 	    // binary data file output
 	    fputc(char((opcode>>8)&255), bin_data_out);
 	    fputc(char(opcode&255),      bin_data_out);
+	    // boot image output
+	    sprintf(buf_string, "%06d => x\"%04x\",\n", line-1+8, opcode);
+		fputs(buf_string, boot_out);
 		// compute xor-checksum
 		xor_checksum = xor_checksum xor opcode;
 		xor_checksum = xor_checksum & (int)(pow(2, 16)-1);
@@ -1841,31 +1852,43 @@ int assemble(const char *input_file, const char *output_file, const char *bin_ou
       line++;
     }
 
-	if (error_cnt == 0)
+	if (error_cnt == 0){
 	  fputs("others => x\"0000\"  -- NOP", data_out);
+	  fputs("others => x\"0000\"", boot_out);
+	}
 
 	// build header
 	rewind(bin_data_out);
+	rewind(boot_out);
 
 	// bootfile signature
 	fputc(char(((51966)>>8)&255), bin_data_out);
 	fputc(char((51966)&255),      bin_data_out);
+	sprintf(buf_string, "000000 => x\"%04x\",\n", 51966); fputs(buf_string, boot_out);
 
 	// program size (words)
 	fputc(char(((line-1)>>8)&255), bin_data_out);
 	fputc(char((line-1)&255),      bin_data_out);
+	sprintf(buf_string, "000001 => x\"%04x\",\n", line-1); fputs(buf_string, boot_out);
 
 	// xor-checksum
 	fputc(char(((xor_checksum)>>8)&255), bin_data_out);
 	fputc(char((xor_checksum)&255),      bin_data_out);
+	sprintf(buf_string, "000002 => x\"%04x\",\n", xor_checksum); fputs(buf_string, boot_out);
 
 	// image name
 	for(i=0; i<10; i++)
 		fputc(char((image_name[i])&255), bin_data_out);
+	for(i=0; i<10; i+=2){
+	  sprintf(buf_string, "%06d => x\"%04x\",\n", i/2+3, (((int)(image_name[i]&255))<<8)|(((int)(image_name[i+1]&255))));
+	  fputs(buf_string, boot_out);
+	}
+	
 	 
     fclose(bin_data_out);
     fclose(data_out);
     fclose(data_in);
+    fclose(boot_out);
 	
 	return line;
 }
@@ -1879,7 +1902,7 @@ int main(int argc, char *argv[]){
 	int p_size = 0;
 	int i = 0;
 
-    printf("ATLAS 2k Assembler, Version 2014.04.10\n");
+    printf("ATLAS 2k Assembler, Version 2014.04.14\n");
     printf("by Stephan Nolting (stnolting@gmail.com), Hanover, Germany\n");
     printf("www.opencores.org/project,atlas_core\n\n");
 
@@ -1901,13 +1924,13 @@ int main(int argc, char *argv[]){
 	convert_strings("included.xasm", "job.xasm"); // convert strings into direct memory inits
     pre_processor("job.xasm", "pre_processor.asm"); // erase comments & empty lines & get definitions
     get_labels("pre_processor.asm"); // find and list labels
-	p_size = assemble("pre_processor.asm", "init.vhd", "out.bin"); // do the magic conversion
+	p_size = assemble("pre_processor.asm", "init.vhd", "out.bin", "boot_init.vhd"); // do the magic conversion
 
 	if (error_cnt == 0){
-	  printf("\nAssembler completed without errors (%d warnings).\n", warning_cnt);
-	  printf("Final image size:   0x%04X (%d) bytes\n", (p_size-1)*2, (p_size-1)*2);
-	  printf("Image XOR checksum: 0x%04X\n", xor_checksum);
-	  printf("Binary image name:  ");
+	  printf("\nAssembler completed without errors (%d warnings)\n", warning_cnt);
+	  printf("Image size:    0x%04X (%d) bytes\n", (p_size-1)*2, (p_size-1)*2);
+	  printf("XOR check sum: 0x%04X\n", xor_checksum);
+	  printf("Image name:    ");
 	  if (image_name[0] != '\0'){
 	  	for(i=0; i<10;i++)
 	  		printf("%c", image_name[i]);
