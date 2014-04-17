@@ -35,7 +35,7 @@
 ;  usr_r5: Image name (6,7)
 ;  usr_r6: Image name (8,9)
 ;  usr_r7: GP global variable
-;  LFSR_data: Checksum computation
+;  LFSR_poly: Checksum computation
 ; *****************************************************************************************************************
 ; *****************************************************************************************************************
 
@@ -116,7 +116,7 @@ reset:		; set mmu pages
             CLR   R0                                ; ZERO
             mcr   #1, sys0_core, r0, #0				; clear irq mask register
             mcr   #1, sys0_core, r0, #3				; clear timer threshold - disable timer
-            mcr   #1, sys0_core, r0, #6				; clear lfsr polynomial register - disable lfsr
+            mcr   #1, sys0_core, r0, #5				; clear lfsr data register - disable lfsr
             mrc   #1, r0, sys0_core, #0				; ack pending IRQs
 
             ; setup Wishbone bus controller
@@ -237,14 +237,6 @@ console_selector:
             cmp   r1, r6
             beq   boot_wishbone						; boot from wishbone device
 
-            ldil  r1, #'?'
-            cmp   r1, r6
-            bne   #+5
-            ldil  r2, low[keepin_it_country]
-            ldih  r2, high[keepin_it_country]
-            bl    uart_print__
-            b     console_input
-
             ldil  r5, low[burn_eeprom]
             ldih  r5, high[burn_eeprom]
             ldil  r1, #'p'
@@ -272,7 +264,7 @@ console_selector:
             mcr   #1, sys1_core, r1, #1
             gt    r0
 
-keepin_it_country: .stringz "Keepin' it country!\n"
+
 ; -----------------------------------------------------------------------------------
 ; Booting from memory
 ; -----------------------------------------------------------------------------------
@@ -352,16 +344,16 @@ boot_wishbone:
             ; download program
             ldil  r5, #0							; base address MEMORY = 0x0000
             mcr   #1, sys1_core, r5, #2				; set system d-page
-            mcr   #1, sys0_core, r5, #5				; set checksum = 0
+            mcr   #1, sys0_core, r5, #6				; set checksum = 0
 
 boot_wishbone_loop:
             bl    wb_read_word__                    ; get word
             str   r6, r5, +#2, post, !				; save to data mem
 
             ; update checksum
-            mrc   #1, r0, sys0_core, #5				; get checksum
+            mrc   #1, r0, sys0_core, #6				; get checksum
             eor   r0, r0, r6
-            mcr   #1, sys0_core, r0, #5				; set checksum
+            mcr   #1, sys0_core, r0, #6				; set checksum
 
             ; check size counter
             ldub  r0, r0
@@ -375,11 +367,6 @@ boot_wishbone_loop:
 ; Booting from SPI EEPROM
 ; -----------------------------------------------------------------------------------
 boot_eeprom:
-            ; intro
-            ldil  r2, low[string_booting]
-            ldih  r2, high[string_booting]
-            bl    uart_print_
-
             ; get signature
             ldil  r2, #0
             bl    eeprom_get_word                   ; get word from EEPROM
@@ -422,7 +409,7 @@ boot_eeprom:
             ; download program
             ldil  r4, #0							; base address MEMORY = 0x0000
             mcr   #1, sys1_core, r4, #2				; set system d-page
-            mcr   #1, sys0_core, r4, #5				; set checksum = 0
+            mcr   #1, sys0_core, r4, #6				; set checksum = 0
 
 boot_eeprom_loop:
             ldil  r0, #16                           ; base offset
@@ -431,9 +418,9 @@ boot_eeprom_loop:
             str   r5, r4, +#2, post, !				; save to data mem
 
             ; update checksum
-            mrc   #1, r0, sys0_core, #5				; get checksum
+            mrc   #1, r0, sys0_core, #6				; get checksum
             eor   r0, r0, r5
-            mcr   #1, sys0_core, r0, #5				; set checksum
+            mcr   #1, sys0_core, r0, #6				; set checksum
 
             ; check size counter
             ldub  r0, r0
@@ -495,7 +482,7 @@ boot_uart:	ldil  r2, low[string_boot_wimd]
             ; init download
             clr   r5								; address = 0x00000000
             mcr   #1, sys1_core, r5, #2				; set system d-page
-            mcr   #1, sys0_core, r5, #5				; set checksum = 0
+            mcr   #1, sys0_core, r5, #6				; set checksum = 0
 
             ; downloader
 uart_downloader:
@@ -503,9 +490,9 @@ uart_downloader:
             str   r1, r5, +#2, post, !				; save to data mem
 
             ; update checksum
-            mrc   #1, r0, sys0_core, #5				; get checksum
+            mrc   #1, r0, sys0_core, #6				; get checksum
             eor   r0, r0, r1
-            mcr   #1, sys0_core, r0, #5				; set checksum
+            mcr   #1, sys0_core, r0, #6				; set checksum
 
             ldub  r0, r0
             cmp   r5, r0							; done?
@@ -525,7 +512,7 @@ download_completed:
             bl    uart_print_
 
             ; transfer done - check checksum
-            mrc   #1, r0, sys0_core, #5				; get checksum
+            mrc   #1, r0, sys0_core, #6				; get checksum
             ldub  r1, r1
             cmp   r0, r1
             beq   start_image
@@ -566,14 +553,6 @@ receive_hex_word_:      b receive_hex_word
 ; Start image from memory
 ; -----------------------------------------------------------------------------------
 start_image:
-            ; print checksum
-            ldil  r2, low[string_checksum]
-            ldih  r2, high[string_checksum]
-            bl    uart_print
-            mrc   #1, r4, sys0_core, #5				; get checksum
-            bl    print_hex_string                  ; print computed checksum
-            bl    uart_linebreak
-
             ldil  r2, low[string_start_im]
             ldih  r2, high[string_start_im]
             bl    uart_print
@@ -596,6 +575,14 @@ start_image:
             bl    start_image_print_name_sub
             ldil  r1, #34							;'"'
             bl    uart_sendbyte
+            bl    uart_linebreak
+
+            ; print checksum
+            ldil  r2, low[string_checksum]
+            ldih  r2, high[string_checksum]
+            bl    uart_print
+            mrc   #1, r4, sys0_core, #6				; get checksum
+            bl    print_hex_string                  ; print computed checksum
             bl    uart_linebreak
 
             ; start the image
@@ -689,14 +676,14 @@ mem_dump_loop_2:
             sub   r4, r5, r0
             ldil  r0, #0xF0
             and   r4, r4, r0
+            ldil  r2, #46							; '.'
 mem_dump_ascii:
             ldr   r1, r4, +#1, post, !				; get one byte
             sft   r1, r1, #swp
             ldih  r1, #0x00							; clear high byte
-            ldil  r0, #32							; ' '
+            ldil  r0, #32							; ' ' space
             cmp   r1, r0							; is ASCII command?
-            bls   #+2
-            ldil  r1, #46							; '.'
+            mvhi  r1, r2                            ; no? print '.'
             bl    uart_sendbyte
             ldil  r1, #0x0F
             and   r0, r1, r4
@@ -762,8 +749,7 @@ burn_eeprom:
 
             ; write signature (2 bytes)
             ldil  r2, #0
-            ldil  r5, #0xFE
-            ldih  r5, #0xCA
+            mov   r5, r1
             bl    eeprom_write_word                 ; write word to eeprom
 
             ; get image size
@@ -801,7 +787,7 @@ burn_eeprom_image_name:
             bne   burn_eeprom_image_name
 
             ; write image data
-            ldil  r2, #16							; base address
+;           ldil  r2, #16							; base address
             clr   r5								; byte counter
 burn_eeprom_image_data:
             bl    uart_receivebyte					; get byte
@@ -1005,7 +991,7 @@ receive_hex_word_echo:
 ; Arguments:
 ;  r4 = data
 ; Results: -
-; Used registers: r0, r1, r2, r3, r4, r6, lr
+; Used registers: r0, r1, r2, r4, r6, lr
 print_hex_string:
 ; --------------------------------------------------------------------------------------------------------
             mov   r6, lr							; backup link regiiter
@@ -1257,6 +1243,20 @@ resume_error:
             gt    r0								; restart
 
 
+; -----------------------------------------------------------------------------------
+; Wait for user to cancel/proceed
+; -----------------------------------------------------------------------------------
+user_wait:  mov   r2, lr
+user_wait_: bl    uart_receivebyte
+            ldil  r1, #0x0D							; CR - enter
+            cmp   r0, r1                            ; execute?
+            rbaeq r2
+            ldil  r1, #0x08							; Backspace - abort
+            cmp   r0, r1                            ; abort?
+            beq   wb_dump_end
+            b     user_wait_
+
+
 ; *****************************************************************************************************************
 ; Wishbone Access
 ; *****************************************************************************************************************
@@ -1293,17 +1293,37 @@ wb_dump_loop:
             bl    uart_linebreak
             bl    wb_read_word
 
+            ; print hex data word
             ldil  r2, low[string_wbhexpre]
             ldih  r2, high[string_wbhexpre]
             bl    uart_print
             mov   r4, r6                            ; data from wishbone
             bl    print_hex_string
 
+            ; print ascii data
+            ldil  r6, #32
+            ldil  r3, #'.'
+            mov   r1, r6                            ; space
+            bl    uart_sendbyte
+
+            ; high char
+            sft   r1, r4, #swp
+            ldih  r1, #0x00
+            cmp   r1, r6
+            mvhi  r1, r3
+            bl    uart_sendbyte
+
+            ; low char
+            mov   r1, r4
+            ldih  r1, #0x00
+            cmp   r1, r6
+            mvhi  r1, r3
+            bl    uart_sendbyte
+
             ; user input?
             mrc   #1, r1, com0_core, #0				; get uart status/data register
-            stb   r1, #15							; copy inverted uart rx_ready flag to T-flag
-            bts   #+2
-            b     wb_dump_loop
+            stbi  r1, #15							; copy inverted uart rx_ready flag to T-flag
+            bts   wb_dump_loop
 
             ; return to main console
 wb_dump_end:
@@ -1312,28 +1332,17 @@ wb_dump_end:
             ldih  r5, high[console_input]
             gt    r5
 
-            ; wait for user to cancel/proceed
-user_wait:  mov   r2, lr
-user_wait_: bl    uart_receivebyte
-            ldil  r1, #0x0D							; CR - enter
-            cmp   r0, r1                            ; execute?
-            rbaeq r2
-            ldil  r1, #0x08							; Backspace - abort
-            cmp   r0, r1                            ; abort?
-            beq   wb_dump_end
-            b     user_wait_
-
 
 ; *****************************************************************************************************************
 ; ROM: Text strings
 ; *****************************************************************************************************************
-string_intro0:    .stringz "\n\nAtlas-2K Bootloader - V20140414\nby Stephan Nolting, stnolting@gmail.com\nwww.opencores.org/project,atlas_core\n"
+string_intro0:    .stringz "\n\nAtlas-2K Bootloader - V20140417\nby Stephan Nolting, stnolting@gmail.com\nwww.opencores.org/project,atlas_core\n"
 string_intro3:    .stringz "\nBoot page: 0x"
 string_intro4:    .stringz "\nClock(Hz): 0x"
 
 string_booting:   .stringz "Booting\n"
 string_prog_eep:  .stringz "Burn EEPROM\n"
-string_boot_wimd: .stringz "Waiting for data...\n"
+string_boot_wimd: .stringz "Awaiting data...\n"
 string_start_im:  .stringz "Starting image "
 string_done:      .stringz "Download complete\n"
 string_edpage:    .stringz "Page (4h): $"
