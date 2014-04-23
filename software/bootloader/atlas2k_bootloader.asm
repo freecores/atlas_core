@@ -2,7 +2,7 @@
 ; *****************************************************************************************************************
 ; ATLAS 2K Bootloader
 ;
-; Bootloader MEM (ROM) pages starting at 0x8000
+; Bootloader (ROM) pages starting at 0x8000
 ;
 ; Options:
 ;  -> load image via UART
@@ -10,6 +10,7 @@
 ;  -> load image from SPI EEPROM
 ;  -> burn image to SPI EEPROM
 ;  -> make hex dump from memory (any page)
+;  -> make hex word dump from Wishbone address
 ;
 ; Boot configuration via CP1.COM_0_CORE.SYS_IN (bits 1 downto 0):
 ;  -> "00": Launch console
@@ -34,7 +35,7 @@
 ;  usr_r4: Image name (4,5)
 ;  usr_r5: Image name (6,7)
 ;  usr_r6: Image name (8,9)
-;  usr_r7: GP global variable
+;  usr_r7: GP variable
 ;  LFSR_poly: Checksum computation
 ; *****************************************************************************************************************
 ; *****************************************************************************************************************
@@ -64,13 +65,12 @@
 ; Configuration constans
 ; -----------------------------------------------------------------------------
 .equ uart_baud_c #2400  ; com0_core.UART default baud rate
-; keep the baud rate low - eeprom programming is done without buffering!
+; keep the baud rate low - EEPROM programming is done without buffering!
 
 
 ; *****************************************************************************************************************
 ; Exception Vector Table
 ; *****************************************************************************************************************
-
 reset_vec:		b reset
 x_int0_vec:		b boot_irq_error					; fatal error
 x_int1_vec:		b boot_irq_error					; fatal error
@@ -83,9 +83,9 @@ swi_vec:		b boot_irq_error					; fatal error
 ; *****************************************************************************************************************
 boot_irq_error:
             ; restore bootloader page
-            ldil  r0, #0x00							; = 0x8000
+            ldil  r0, #0x00
             ldih  r0, #0x80
-            mcr   #1, sys1_core, r0, #2				; set d-page
+            mcr   #1, sys1_core, r0, #2				; set d-page = 0x8000
 
             ; set alarm lights
             ldih  r0, #0b10011001
@@ -121,8 +121,7 @@ reset:		; set mmu pages
 
             ; setup Wishbone bus controller
             mcr   #1, com1_core, r0, #0				; set WB ctrl reg (burst size = 1, all options disabled)
-            ldil  r0, #0x02                         ; offset = 1 word
-            mcr   #1, com1_core, r0, #3				; set WB address offset reg
+            mcr   #1, com1_core, r0, #3				; clear WB address offset reg
             ldil  r0, #100                          ; timeout = 100 cycles
             mcr   #1, com1_core, r0, #5				; set WB timeout reg
 
@@ -587,6 +586,8 @@ start_image:
 
             ; start the image
 start_image_no_text:
+            bl    uart_linebreak
+            bl    uart_linebreak
             bl    uart_linebreak
 
             ; re-init MSR
@@ -1283,6 +1284,7 @@ wb_dump:    ldil  r2, low[string_ewbadr]
             bl    receive_hex_word
             mov   r5, r4
             bl    user_wait                         ; wait for user
+            bl    uart_linebreak
 
             ; download word from wishbone net
 wb_dump_loop:
@@ -1290,13 +1292,21 @@ wb_dump_loop:
             beq   wb_dump_end
             dec   r5, r5, #1
 
+            ; print address (32 bit)
             bl    uart_linebreak
-            bl    wb_read_word
+            ldil  r1, #'$'
+            bl    uart_sendbyte
+            mrc   #1, r4, com1_core, #2				; get hi address
+            bl    print_hex_string
+            mrc   #1, r4, com1_core, #1				; get lo address
+            bl    print_hex_string
+            ldil  r1, #58                          ;':'
+            bl    uart_sendbyte
 
             ; print hex data word
-            ldil  r2, low[string_wbhexpre]
-            ldih  r2, high[string_wbhexpre]
-            bl    uart_print
+            ldil  r1, #32
+            bl    uart_sendbyte
+            bl    wb_read_word
             mov   r4, r6                            ; data from wishbone
             bl    print_hex_string
 
@@ -1333,10 +1343,11 @@ wb_dump_end:
             gt    r5
 
 
+
 ; *****************************************************************************************************************
 ; ROM: Text strings
 ; *****************************************************************************************************************
-string_intro0:    .stringz "\n\nAtlas-2K Bootloader - V20140417\nby Stephan Nolting, stnolting@gmail.com\nwww.opencores.org/project,atlas_core\n"
+string_intro0:    .stringz "\n\nAtlas-2K Bootloader - V20140419\nby Stephan Nolting, stnolting@gmail.com\nwww.opencores.org/project,atlas_core\n"
 string_intro3:    .stringz "\nBoot page: 0x"
 string_intro4:    .stringz "\nClock(Hz): 0x"
 
@@ -1349,7 +1360,6 @@ string_edpage:    .stringz "Page (4h): $"
 string_ewbadr:    .stringz "Addr (8h): $"
 string_ewbnum:    .stringz "#words (4h): $"
 string_checksum:  .stringz "Checksum: $"
-string_wbhexpre:  .stringz " -> $"
 
 
 string_menu0:     .stringz "\ncmd/boot-switch:\n 0/'00': Restart console\n 1/'01': Boot UART\n 2/'10': Boot EEPROM\n 3/'11': Boot memory\n"

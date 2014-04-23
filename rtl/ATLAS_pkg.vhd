@@ -4,7 +4,7 @@
 -- #  All architecture configurations, options, signal    #
 -- #  definitions and components are listed here.         #
 -- # **************************************************** #
--- #  Last modified: 09.04.2014                           #
+-- #  Last modified: 19.04.2014                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -139,62 +139,64 @@ package atlas_core_package is
 	constant ctrl_alu_usec_c   : natural := 22; -- alu use MSR(carry_flag)
 	constant ctrl_alu_usez_c   : natural := 23; -- alu use MSR(zero_flag)
 	constant ctrl_fupdate_c    : natural := 24; -- msr flag update enable
+	constant ctrl_alu_cf_opt_c : natural := 25; -- option for carry in (normal/invert)
+	constant ctrl_alu_zf_opt_c : natural := 26; -- option for zero in (AND/OR)
 
 	-- Bit Manipulation --
-	constant ctrl_tf_store_c   : natural := 25; -- store bit to t-flag
-	constant ctrl_tf_inv_c     : natural := 26; -- invert bit to be store in t-flag
-	constant ctrl_get_par_c    : natural := 27; -- get parity bit
+	constant ctrl_tf_store_c   : natural := 27; -- store bit to t-flag
+	constant ctrl_tf_inv_c     : natural := 28; -- invert bit to be store in t-flag
+	constant ctrl_get_par_c    : natural := 29; -- get parity bit
 
 	-- Coprocessor Access --
-	constant ctrl_cp_acc_c     : natural := 28; -- coprocessor operation
-	constant ctrl_cp_trans_c   : natural := 29; -- coprocessor data transfer
-	constant ctrl_cp_wr_c      : natural := 30; -- write to coprocessor
-	constant ctrl_cp_id_c      : natural := 31; -- coprocessor id bit
+	constant ctrl_cp_acc_c     : natural := 30; -- coprocessor operation
+	constant ctrl_cp_trans_c   : natural := 31; -- coprocessor data transfer
+	constant ctrl_cp_wr_c      : natural := 32; -- write to coprocessor
+	constant ctrl_cp_id_c      : natural := 33; -- coprocessor id bit
 
 	-- System Register Access --
-	constant ctrl_msr_wr_c     : natural := 32; -- write to mcr
-	constant ctrl_msr_rd_c     : natural := 33; -- read from mcr
-	constant ctrl_pc_wr_c      : natural := 34; -- write pc
+	constant ctrl_msr_wr_c     : natural := 34; -- write to mcr
+	constant ctrl_msr_rd_c     : natural := 35; -- read from mcr
+	constant ctrl_pc_wr_c      : natural := 36; -- write pc
 
 	-- Branch/Context Control --
-	constant ctrl_cond_0_c     : natural := 35; -- condition code bit 0
-	constant ctrl_cond_1_c     : natural := 36; -- condition code bit 1
-	constant ctrl_cond_2_c     : natural := 37; -- condition code bit 2
-	constant ctrl_cond_3_c     : natural := 38; -- condition code bit 3
-	constant ctrl_branch_c     : natural := 39; -- is branch operation
-	constant ctrl_link_c       : natural := 40; -- store old pc to lr
-	constant ctrl_syscall_c    : natural := 41; -- is a system call
-	constant ctrl_cmd_err_c    : natural := 42; -- invalid/unauthorized operation
-	constant ctrl_ctx_down_c   : natural := 43; -- go to user mode
-	constant ctrl_restsm_c     : natural := 44; -- restore saved mode
+	constant ctrl_cond_0_c     : natural := 37; -- condition code bit 0
+	constant ctrl_cond_1_c     : natural := 38; -- condition code bit 1
+	constant ctrl_cond_2_c     : natural := 39; -- condition code bit 2
+	constant ctrl_cond_3_c     : natural := 40; -- condition code bit 3
+	constant ctrl_branch_c     : natural := 41; -- is branch operation
+	constant ctrl_link_c       : natural := 42; -- store old pc to lr
+	constant ctrl_syscall_c    : natural := 43; -- is a system call
+	constant ctrl_cmd_err_c    : natural := 44; -- invalid/unauthorized operation
+	constant ctrl_ctx_down_c   : natural := 45; -- go to user mode
+	constant ctrl_restsm_c     : natural := 46; -- restore saved mode
 
 	-- Memory Access --
-	constant ctrl_mem_acc_c    : natural := 45; -- request d-mem access
-	constant ctrl_mem_wr_c     : natural := 46; -- write to d-mem
-	constant ctrl_mem_bpba_c   : natural := 47; -- use bypassed base address
-	constant ctrl_mem_daa_c    : natural := 48; -- use delayed address
+	constant ctrl_mem_acc_c    : natural := 47; -- request d-mem access
+	constant ctrl_mem_wr_c     : natural := 48; -- write to d-mem
+	constant ctrl_mem_bpba_c   : natural := 49; -- use bypassed base address
+	constant ctrl_mem_daa_c    : natural := 50; -- use delayed address
 
 	-- Multiply-and-Acuumulate Unit --
-	constant ctrl_use_mac_c    : natural := 49; -- use MAC unit
-	constant ctrl_load_mac_c   : natural := 50; -- load addition buffer for MAC
-	constant ctrl_use_offs_c   : natural := 51; -- use loaded offset
+	constant ctrl_use_mac_c    : natural := 51; -- use MAC unit
+	constant ctrl_load_mac_c   : natural := 52; -- load addition buffer for MAC
+	constant ctrl_use_offs_c   : natural := 53; -- use loaded offset
 
 	-- Sleep command --
-	constant ctrl_sleep_c      : natural := 52; -- go to sleep
+	constant ctrl_sleep_c      : natural := 54; -- go to sleep
 
     -- Conditional write back --
-    constant ctrl_cond_wb_c    : natural := 53; -- is cond write back?
+    constant ctrl_cond_wb_c    : natural := 55; -- is cond write back?
 
 --	-- EX Forwarding --
---	constant ctrl_a_ex_ma_fw_c : natural := 54; -- obsolete
---	constant ctrl_a_ex_wb_fw_c : natural := 55; -- obsolete
---	constant ctrl_b_ex_ma_fw_c : natural := 56; -- obsolete
---	constant ctrl_b_ex_wb_fw_c : natural := 57; -- obsolete
---	constant ctrl_c_ex_wb_fw_c : natural := 58; -- obsolete
+--	constant ctrl_a_ex_ma_fw_c : natural := 56; -- obsolete
+--	constant ctrl_a_ex_wb_fw_c : natural := 57; -- obsolete
+--	constant ctrl_b_ex_ma_fw_c : natural := 58; -- obsolete
+--	constant ctrl_b_ex_wb_fw_c : natural := 59; -- obsolete
+--	constant ctrl_c_ex_wb_fw_c : natural := 60; -- obsolete
 
 	-- Bus Size --
-	constant ctrl_width_c      : natural := 54; -- control bus size
---	constant ctrl_width_c      : natural := 59; -- obsolete
+	constant ctrl_width_c      : natural := 56; -- control bus size
+--	constant ctrl_width_c      : natural := 61; -- obsolete
 
 	-- Progress Redefinitions --
 	constant ctrl_wb_en_c      : natural := ctrl_rd_wb_c;   -- valid write back
@@ -213,8 +215,6 @@ package atlas_core_package is
 	constant ctrl_re_xint_c    : natural := ctrl_rb_1_c;    -- re-enable ext interrupts (global)
 	constant ctrl_msr_am_0_c   : natural := ctrl_ra_1_c;    -- MSR access mode bit 0
 	constant ctrl_msr_am_1_c   : natural := ctrl_ra_2_c;    -- MSR access mode bit 1
-	constant ctrl_alu_cf_opt_c : natural := ctrl_rd_2_c;    -- option for carry in (normal/invert)
-	constant ctrl_alu_zf_opt_c : natural := ctrl_rd_1_c;    -- option for zero in (AND/OR)
 
 
   -- Coprocessor Control Bus ----------------------------------------------------------------

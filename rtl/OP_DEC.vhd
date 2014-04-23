@@ -3,7 +3,7 @@
 -- # **************************************************** #
 -- #  OpCode decoding unit.                               #
 -- # **************************************************** #
--- #  Last modified: 23.03.2014                           #
+-- #  Last modified: 19.04.2014                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -145,21 +145,23 @@ begin
 
 						when fs_cpx_c => -- extended compare with flags // store to msr if s = 0
 							CTRL_O(ctrl_alu_fs_2_c downto ctrl_alu_fs_0_c) <= alu_sbc_c; -- compare by subtraction with flags
-							CTRL_O(ctrl_alu_usec_c) <= '1'; -- use carry input
-							CTRL_O(ctrl_alu_usez_c) <= '1'; -- use zero input
-							CTRL_O(ctrl_rd_wb_c)    <= '0'; -- disable write back
-							CTRL_O(ctrl_msr_am_1_c) <= INSTR_INT(6); -- only for MSR immediate write access
-							CTRL_O(ctrl_msr_am_0_c) <= INSTR_INT(5); -- only for MSR immediate write access
-							IMM_O(msr_sys_z_flag_c) <= INSTR_INT(0); -- only for MSR immediate write access
-							IMM_O(msr_usr_z_flag_c) <= INSTR_INT(0); -- only for MSR immediate write access
-							IMM_O(msr_sys_c_flag_c) <= INSTR_INT(1); -- only for MSR immediate write access
-							IMM_O(msr_usr_c_flag_c) <= INSTR_INT(1); -- only for MSR immediate write access
-							IMM_O(msr_sys_o_flag_c) <= INSTR_INT(2); -- only for MSR immediate write access
-							IMM_O(msr_usr_o_flag_c) <= INSTR_INT(2); -- only for MSR immediate write access
-							IMM_O(msr_sys_n_flag_c) <= INSTR_INT(7); -- only for MSR immediate write access
-							IMM_O(msr_usr_n_flag_c) <= INSTR_INT(7); -- only for MSR immediate write access
-							IMM_O(msr_sys_t_flag_c) <= INSTR_INT(8); -- only for MSR immediate write access
-							IMM_O(msr_usr_t_flag_c) <= INSTR_INT(8); -- only for MSR immediate write access
+							CTRL_O(ctrl_alu_usec_c)   <= '1'; -- use carry input
+							CTRL_O(ctrl_alu_usez_c)   <= '1'; -- use zero input
+							CTRL_O(ctrl_rd_wb_c)      <= '0'; -- disable write back
+							CTRL_O(ctrl_msr_am_1_c)   <= INSTR_INT(6); -- only for MSR immediate write access
+							CTRL_O(ctrl_msr_am_0_c)   <= INSTR_INT(5); -- only for MSR immediate write access
+							CTRL_O(ctrl_alu_cf_opt_c) <= INSTR_INT(9); -- invert carry flag option?
+							CTRL_O(ctrl_alu_zf_opt_c) <= INSTR_INT(8); -- use old zero flag option?
+							IMM_O(msr_sys_z_flag_c)   <= INSTR_INT(0); -- only for MSR immediate write access
+							IMM_O(msr_usr_z_flag_c)   <= INSTR_INT(0); -- only for MSR immediate write access
+							IMM_O(msr_sys_c_flag_c)   <= INSTR_INT(1); -- only for MSR immediate write access
+							IMM_O(msr_usr_c_flag_c)   <= INSTR_INT(1); -- only for MSR immediate write access
+							IMM_O(msr_sys_o_flag_c)   <= INSTR_INT(2); -- only for MSR immediate write access
+							IMM_O(msr_usr_o_flag_c)   <= INSTR_INT(2); -- only for MSR immediate write access
+							IMM_O(msr_sys_n_flag_c)   <= INSTR_INT(7); -- only for MSR immediate write access
+							IMM_O(msr_usr_n_flag_c)   <= INSTR_INT(7); -- only for MSR immediate write access
+							IMM_O(msr_sys_t_flag_c)   <= INSTR_INT(8); -- only for MSR immediate write access
+							IMM_O(msr_usr_t_flag_c)   <= INSTR_INT(8); -- only for MSR immediate write access
 							if (INSTR_INT(3) = '0') then -- store to MSR
 								if ((M_FLAG_I = user_mode_c) and (INSTR_INT(6 downto 5) /= "11")) then
 									CTRL_O(ctrl_cmd_err_c) <= '1'; -- access violation -> cmd_err trap
