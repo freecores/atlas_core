@@ -12,7 +12,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="155" />
+   <WVObjectSize size="156" />
    <wvobject fp_name="divider11" type="divider">
       <obj_property name="label">Global Control</obj_property>
       <obj_property name="DisplayName">label</obj_property>
@@ -146,6 +146,11 @@
       <obj_property name="ElementShortName">flag_bus_o[4:0]</obj_property>
       <obj_property name="ObjectShortName">flag_bus_o[4:0]</obj_property>
       <obj_property name="Radix">BINARYRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/atlas_2k_base_tb/DUT/the_core_of_the_problem/cpu_core/Executor/fu_arith_res" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">fu_arith_res[15:0]</obj_property>
+      <obj_property name="ObjectShortName">fu_arith_res[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/atlas_2k_base_tb/DUT/the_core_of_the_problem/cpu_core/Executor/alu_res_o" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">alu_res_o[15:0]</obj_property>

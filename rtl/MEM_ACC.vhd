@@ -5,7 +5,7 @@
 -- #  data memory interface. Furthermore, internal data   #
 -- #  switching networks are located here.                #
 -- # **************************************************** #
--- #  Last modified: 01.02.2014                           #
+-- #  Last modified: 29.04.2014                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -38,7 +38,7 @@ entity MEM_ACC is
 -- ###############################################################################################
 
 				ALU_RES_I       : in  std_logic_vector(data_width_c-1 downto 0); -- alu result
-				MAC_RES_I       : in  std_logic_vector(data_width_c-1 downto 0); -- mac result
+				MUL_RES_I       : in  std_logic_vector(2*data_width_c-1 downto 0); -- mul result
 				ADR_BASE_I      : in  std_logic_vector(data_width_c-1 downto 0); -- op_a bypass
 				DATA_BP_I       : in  std_logic_vector(data_width_c-1 downto 0); -- op_b bypass
 				CP_DATA_I       : in  std_logic_vector(data_width_c-1 downto 0); -- coprocessor rd data
@@ -69,7 +69,6 @@ architecture MA_STRUCTURE of MEM_ACC is
 
 	-- Pipeline register --
 	signal ALU_RES_FF       : std_logic_vector(data_width_c-1 downto 0);
-	signal MAC_RES_FF       : std_logic_vector(data_width_c-1 downto 0);
 	signal ADR_BASE_FF      : std_logic_vector(data_width_c-1 downto 0);
 	signal DATA_BP_FF       : std_logic_vector(data_width_c-1 downto 0);
 
@@ -81,6 +80,7 @@ architecture MA_STRUCTURE of MEM_ACC is
 	signal ALU_MAC_DAT      : std_logic_vector(data_width_c-1 downto 0);
 	signal SYS_CP_R_DAT     : std_logic_vector(data_width_c-1 downto 0);
 	signal SYS_CP_ALU_R_DAT : std_logic_vector(data_width_c-1 downto 0);
+	signal MUL_RES_INT      : std_logic_vector(data_width_c-1 downto 0);
 
 begin
 
@@ -91,13 +91,11 @@ begin
 			if rising_edge(CLK_I) then
 				if (RST_I = '1') then
 					ALU_RES_FF  <= (others => '0');
-					MAC_RES_FF  <= (others => '0');
 					ADR_BASE_FF <= (others => '0');
 					DATA_BP_FF  <= (others => '0');
 					ALU_RES_BUF <= (others => '0');
 				elsif (CE_I = '1') then
 					ALU_RES_FF  <= ALU_RES_I;
-					MAC_RES_FF  <= MAC_RES_I;
 					ADR_BASE_FF <= ADR_BASE_I;
 					DATA_BP_FF  <= DATA_BP_I;
 					ALU_RES_BUF <= ALU_RES_FF;
@@ -164,14 +162,23 @@ begin
 
 	-- Stage Data Multiplexer ------------------------------------------------------------------------------
 	-- --------------------------------------------------------------------------------------------------------
-		no_mac_mul_units: -- syntheszie no MAC and no MUL unit
-			if (build_mul_c = false) and (build_mac_c = false) generate
+		no_mul_unit: -- syntheszie no MUL unit at all
+			if (build_mul_c = false) generate
+				MUL_RES_INT <= (others => '0');
 				ALU_MAC_DAT <= ALU_RES_FF;
-			end generate no_mac_mul_units;
-		synhesize_mac_mul_units: -- synthesize MAC and/or MUL unit
-			if (build_mul_c = true) or (build_mac_c = true) generate
-				ALU_MAC_DAT <= MAC_RES_FF when (MA_CTRL_BUS_I(ctrl_use_mac_c) = '1') else ALU_RES_FF;
-			end generate synhesize_mac_mul_units;
+			end generate no_mul_unit;
+
+		synhesize_mul16_unit: -- synthesize 16-bit MUL unit
+			if (build_mul_c = true) and (build_mul32_c = false) generate
+				MUL_RES_INT <= (others => '0');
+				ALU_MAC_DAT <= MUL_RES_I(15 downto 0) when (MA_CTRL_BUS_I(ctrl_use_mul_c) = '1') else ALU_RES_FF;
+			end generate synhesize_mul16_unit;
+
+		synhesize_mul32_unit: -- synthesize 32-bit MUL unit
+			if (build_mul_c = true) and (build_mul32_c = true) generate
+				MUL_RES_INT <= MUL_RES_I(31 downto 16) when (MA_CTRL_BUS_I(ctrl_ext_mul_c) = '1') else MUL_RES_I(15 downto 0);
+				ALU_MAC_DAT <= MUL_RES_INT when (MA_CTRL_BUS_I(ctrl_use_mul_c) = '1') else ALU_RES_FF;
+			end generate synhesize_mul32_unit;
 
 		-- Coprocessor input --
 		SYS_CP_R_DAT <= CP_DATA_I when (MA_CTRL_BUS_I(ctrl_rd_cp_acc_c) = '1') else RD_MSR_I;

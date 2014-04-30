@@ -649,6 +649,10 @@ mem_dump_loop:
             bl    uart_linebreak
             ldil  r1, #36							; '$'
             bl    uart_sendbyte
+            mrc   #1, r4, sys1_core, #2				; get d-page
+            bl    print_hex_string					; print 4hex page
+            ldil  r1, #'.'							; ' '
+            bl    uart_sendbyte
             mov   r4, r5
             bl    print_hex_string					; print 4hex byte address
             ldil  r1, #58							; ':'
@@ -1347,7 +1351,7 @@ wb_dump_end:
 ; *****************************************************************************************************************
 ; ROM: Text strings
 ; *****************************************************************************************************************
-string_intro0:    .stringz "\n\nAtlas-2K Bootloader - V20140419\nby Stephan Nolting, stnolting@gmail.com\nwww.opencores.org/project,atlas_core\n"
+string_intro0:    .stringz "\n\nAtlas-2K Bootloader - V20140424\nby Stephan Nolting, stnolting@gmail.com\nwww.opencores.org/project,atlas_core\n"
 string_intro3:    .stringz "\nBoot page: 0x"
 string_intro4:    .stringz "\nClock(Hz): 0x"
 

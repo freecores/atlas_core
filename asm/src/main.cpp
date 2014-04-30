@@ -1752,10 +1752,12 @@ int assemble(const char *input_file, const char *output_file, const char *bin_ou
       else if ((strcmp(arg[0], "RBRL") == 0) or (strcmp(arg[0], "RBRLAL") == 0)) // register-base branch relative & link - always
 		opcode = (61<<10) | (1<<9) | (0<<8) | (1<<7) | (15<<3) | (conv_reg(arg[1], line)<<0);
 
-	  // MUL-Instruction
+	  // MUL-Instructions
 	  // ---------------------------------------------------------------------------------------------------------
-      else if (strcmp(arg[0], "MUL") == 0) // increment with #0 = move register
+      else if (strcmp(arg[0], "MUL") == 0) // 16-bit multiplication result
 		opcode = (15<<12) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | (0<<3)  | (conv_reg(arg[3], line)<<0);
+      else if (strcmp(arg[0], "MULH") == 0) // 32-bit multiplication high result
+		opcode = (15<<12) | (conv_reg(arg[1], line)<<7) | (conv_reg(arg[2], line)<<4) | (1<<3)  | (conv_reg(arg[3], line)<<0);
 
 	  // Pseudo-Instructions
 	  // ---------------------------------------------------------------------------------------------------------
@@ -1902,7 +1904,7 @@ int main(int argc, char *argv[]){
 	int p_size = 0;
 	int i = 0;
 
-    printf("ATLAS 2k Assembler, Version 2014.04.14\n");
+    printf("ATLAS 2k Assembler, Version 2014.04.29\n");
     printf("by Stephan Nolting (stnolting@gmail.com), Hanover, Germany\n");
     printf("www.opencores.org/project,atlas_core\n\n");
 

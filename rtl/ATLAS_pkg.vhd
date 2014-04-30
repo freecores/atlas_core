@@ -4,7 +4,7 @@
 -- #  All architecture configurations, options, signal    #
 -- #  definitions and components are listed here.         #
 -- # **************************************************** #
--- #  Last modified: 19.04.2014                           #
+-- #  Last modified: 29.04.2014                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -15,18 +15,18 @@ use ieee.numeric_std.all;
 
 package atlas_core_package is
 
-  -- Architecture Configuration for Application ---------------------------------------------
-  -- -------------------------------------------------------------------------------------------
-    constant big_endian_c      : boolean := false; -- use little/big endian memory system
+-- Architecture Configuration for Application ---------------------------------------------
+-- -------------------------------------------------------------------------------------------
+	constant big_endian_c      : boolean := false; -- use little/big endian memory system
 	constant build_mul_c       : boolean := true;  -- build a dedicated MUL unit
-	constant build_mac_c       : boolean := false; -- build a dedicated MAC unit - do not change!
+	constant build_mul32_c     : boolean := true;  -- build 32-bit multiplier
 	constant word_mode_en_c    : boolean := false; -- use word-addressed memory system instead of byte-addressed
-    constant wb_fifo_size_c    : natural := 32; -- Wishbone fifo size in words (power of 2!)
+	constant wb_fifo_size_c    : natural := 32; -- Wishbone fifo size in words (power of 2!)
 
 	---- DO NOT CHANGE ANYTHING BELOW UNLESS YOU REALLY KNOW WHAT YOU ARE DOING! ----
 
-  -- Architecture Constants -----------------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
+-- Architecture Constants -----------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
 	constant data_width_c      : natural := 16; -- processing data width
 	constant data_bytes_c      : natural := data_width_c/8; -- processing data width in bytes
 	constant align_lsb_c       : natural := data_bytes_c/2; -- lsb of adr word boundary
@@ -41,11 +41,11 @@ package atlas_core_package is
 	constant branch_slots_en_c : boolean := false; -- use branch delay slots (highly experimental!!!)
 	constant ldil_sign_ext_c   : boolean := true;  -- use sign extension when loading low byte
 	constant reg_branches_en_c : boolean := true;  -- synthesize register-based branches
-    constant cond_moves_en_c   : boolean := true;  -- synthesize conditional moves
+	constant cond_moves_en_c   : boolean := true;  -- synthesize conditional moves
 
 
-  -- Interrupt/Exception Vectors (word-address) ---------------------------------------------
-  -- -------------------------------------------------------------------------------------------
+-- Interrupt/Exception Vectors (word-address) ---------------------------------------------
+-- -------------------------------------------------------------------------------------------
 	constant res_int_vec_c     : std_logic_vector(15 downto 0) := x"0000"; -- use boot address instead!
 	constant irq0_int_vec_c    : std_logic_vector(15 downto 0) := x"0001"; -- external int line 0 IRQ
 	constant irq1_int_vec_c    : std_logic_vector(15 downto 0) := x"0002"; -- external int line 1 IRQ
@@ -53,16 +53,16 @@ package atlas_core_package is
 	constant swi_int_vec_c     : std_logic_vector(15 downto 0) := x"0004"; -- software IRQ
 
 
-  -- Wishbone Bus Constants -----------------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
+-- Wishbone Bus Constants -----------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
 	constant wb_classic_cyc_c  : std_logic_vector(2 downto 0) := "000"; -- classic cycle
 	constant wb_con_bst_cyc_c  : std_logic_vector(2 downto 0) := "001"; -- constant address burst
 	constant wb_inc_bst_cyc_c  : std_logic_vector(2 downto 0) := "010"; -- incrementing address burst
 	constant wb_end_bst_cyc_c  : std_logic_vector(2 downto 0) := "111"; -- burst end
 
 
-  -- Machine Status Register ----------------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
+-- Machine Status Register ----------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
 	constant msr_usr_z_flag_c  : natural := 0;  -- user mode zero flag
 	constant msr_usr_c_flag_c  : natural := 1;  -- user mode carry flag
 	constant msr_usr_o_flag_c  : natural := 2;  -- user mode overflow flag
@@ -81,8 +81,8 @@ package atlas_core_package is
 	constant msr_mode_flag_c   : natural := 15; -- system ('1') / user ('0') mode
 
 
-  -- Forwarding Bus -------------------------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
+-- Forwarding Bus -------------------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
 	constant fwd_en_c          : natural := 0;  -- valid register signal
 	constant fwd_adr_0_c       : natural := 1;  -- address bit 0
 	constant fwd_adr_1_c       : natural := 2;  -- address bit 1
@@ -93,8 +93,8 @@ package atlas_core_package is
 	constant fwd_width_c       : natural := 5+data_width_c;   -- size of forwarding bus
 
 
-  -- Flag Bus -------------------------------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
+-- Flag Bus -------------------------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
 	constant flag_z_c          : natural := 0;  -- user mode zero flag
 	constant flag_c_c          : natural := 1;  -- user mode carry flag
 	constant flag_o_c          : natural := 2;  -- user mode overflow flag
@@ -103,8 +103,8 @@ package atlas_core_package is
 	constant flag_bus_width_c  : natural := 5;  -- size of flag bus
 
 
-  -- Main Control Bus -----------------------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
+-- Main Control Bus -----------------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
 	-- Global Control --
 	constant ctrl_en_c         : natural := 0;  -- valid cycle
 	constant ctrl_mcyc_c       : natural := 1;  -- un-interruptable/atomic operation
@@ -176,16 +176,16 @@ package atlas_core_package is
 	constant ctrl_mem_bpba_c   : natural := 49; -- use bypassed base address
 	constant ctrl_mem_daa_c    : natural := 50; -- use delayed address
 
-	-- Multiply-and-Acuumulate Unit --
-	constant ctrl_use_mac_c    : natural := 51; -- use MAC unit
-	constant ctrl_load_mac_c   : natural := 52; -- load addition buffer for MAC
+	-- Multiply Unit --
+	constant ctrl_use_mul_c    : natural := 51; -- use MUL unit
+	constant ctrl_ext_mul_c    : natural := 52; -- get high mul result
 	constant ctrl_use_offs_c   : natural := 53; -- use loaded offset
 
 	-- Sleep command --
 	constant ctrl_sleep_c      : natural := 54; -- go to sleep
 
-    -- Conditional write back --
-    constant ctrl_cond_wb_c    : natural := 55; -- is cond write back?
+	-- Conditional write back --
+	constant ctrl_cond_wb_c    : natural := 55; -- is cond write back?
 
 --	-- EX Forwarding --
 --	constant ctrl_a_ex_ma_fw_c : natural := 56; -- obsolete
@@ -217,8 +217,8 @@ package atlas_core_package is
 	constant ctrl_msr_am_1_c   : natural := ctrl_ra_2_c;    -- MSR access mode bit 1
 
 
-  -- Coprocessor Control Bus ----------------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
+-- Coprocessor Control Bus ----------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
 	constant cp_cmd_lsb_c      : natural := 0; -- command word lsb
 	constant cp_cmd_msb_c      : natural := 2; -- command word msb
 	constant cp_op_b_lsb_c     : natural := 3; -- operand B address lsb
@@ -228,8 +228,8 @@ package atlas_core_package is
 	constant cp_cmd_width_c    : natural := 9; -- bus size
 
 
-  -- Condition Codes ------------------------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
+-- Condition Codes ------------------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
 	constant cond_eq_c         : std_logic_vector(3 downto 0) := "0000"; -- equal
 	constant cond_ne_c         : std_logic_vector(3 downto 0) := "0001"; -- not equal
 	constant cond_cs_c         : std_logic_vector(3 downto 0) := "0010"; -- unsigned higher or same
@@ -248,8 +248,8 @@ package atlas_core_package is
 	constant cond_al_c         : std_logic_vector(3 downto 0) := "1111"; -- always
 
 
-  -- ALU Function Select --------------------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
+-- ALU Function Select --------------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
 	constant fs_inc_c          : std_logic_vector(3 downto 0) := "0000"; -- add immediate
 	constant fs_dec_c          : std_logic_vector(3 downto 0) := "0001"; -- subtract immediate
 	constant fs_add_c          : std_logic_vector(3 downto 0) := "0010"; -- add
@@ -286,8 +286,8 @@ package atlas_core_package is
 	constant alu_nand_c        : std_logic_vector(2 downto 0) := "111"; -- logical nand
 
 
-  -- Shifter Control ------------------------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
+-- Shifter Control ------------------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
 	constant sft_swp_c         : std_logic_vector(2 downto 0) := "000"; -- swap halfwords
 	constant sft_asr_c         : std_logic_vector(2 downto 0) := "001"; -- arithemtical right shift
 	constant sft_rol_c         : std_logic_vector(2 downto 0) := "010"; -- rotate left
@@ -298,8 +298,8 @@ package atlas_core_package is
 	constant sft_rrc_c         : std_logic_vector(2 downto 0) := "111"; -- rotate right through carry
 
 
-  -- Cool Stuff -----------------------------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
+-- Cool Stuff -----------------------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
 	-- S: Carrie Underwood - Thank God For The Hometowns
 	-- M: Precious - Das Leben ist kostbar
 	-- M: Mean Creek
@@ -312,14 +312,14 @@ package atlas_core_package is
 	-- M: Brantley Gilbert - Bottoms Up
 
 
-  -- Functions ------------------------------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
+-- Functions ------------------------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
 	function log2(temp : natural) return natural; -- logarithm base 2
 
 
-  -- Component: Data Register File ----------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
-  component REG_FILE
+-- Component: Data Register File ----------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
+component REG_FILE
 	port	(
 				-- Global Control --
 				CLK_I           : in  std_logic; -- global clock line
@@ -341,12 +341,12 @@ package atlas_core_package is
 				OP_B_DATA_O     : out std_logic_vector(data_width_c-1 downto 0); -- operand B output
 				OP_C_DATA_O     : out std_logic_vector(data_width_c-1 downto 0)  -- operand C output
 			);
-  end component;
+end component;
 
 
-  -- Component: Arithmetic/Logic Unit -------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
-  component ALU
+-- Component: Arithmetic/Logic Unit -------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
+component ALU
 	port	(
 				-- Global Control --
 				CLK_I           : in  std_logic; -- global clock line
@@ -370,7 +370,7 @@ package atlas_core_package is
 				MASK_T_FLAG_O   : out std_logic; -- T-Flag for mask generation
 				MSR_DATA_O      : out std_logic_vector(data_width_c-1 downto 0); -- MSR write data
 				ALU_RES_O       : out std_logic_vector(data_width_c-1 downto 0); -- ALU result
-				MAC_RES_O       : out std_logic_vector(data_width_c-1 downto 0); -- MAC result
+				MUL_RES_O       : out std_logic_vector(2*data_width_c-1 downto 0); -- MUL result
 				BP_OPA_O        : out std_logic_vector(data_width_c-1 downto 0); -- operand A bypass
 				BP_OPC_O        : out std_logic_vector(data_width_c-1 downto 0); -- operand C bypass
 				CP_CP0_EN_O     : out std_logic; -- access to cp0
@@ -381,12 +381,12 @@ package atlas_core_package is
 				CP_DAT_O        : out std_logic_vector(data_width_c-1 downto 0); -- write data
 				MEM_REQ_O       : out std_logic -- data memory access request for next cycle
 			);
-  end component;
+end component;
 
 
-  -- Component: Machine Status System -------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
-  component SYS_REG
+-- Component: Machine Status System -------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
+component SYS_REG
 	port	(
 				-- Global Control --
 				CLK_I           : in  std_logic; -- global clock line
@@ -415,16 +415,16 @@ package atlas_core_package is
 				PC_O            : out std_logic_vector(data_width_c-1 downto 0); -- pc output
 				PC_1D_O         : out std_logic_vector(data_width_c-1 downto 0); -- pc 1x delayed
 				CP_PTC_O        : out std_logic; -- user coprocessor protection
-                COND_TRUE_O     : out std_logic; -- condition is true
+				COND_TRUE_O     : out std_logic; -- condition is true
 				MODE_O          : out std_logic; -- current operating mode
 				MODE_FF_O       : out std_logic  -- delayed current mode
 			);
-  end component;
+end component;
 
 
-  -- Component: Memory Access Control -------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
-  component MEM_ACC
+-- Component: Memory Access Control -------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
+component MEM_ACC
 	port	(
 				-- Global Control --
 				CLK_I           : in  std_logic; -- global clock line
@@ -436,7 +436,7 @@ package atlas_core_package is
 
 				-- Data Input --
 				ALU_RES_I       : in  std_logic_vector(data_width_c-1 downto 0); -- alu result
-				MAC_RES_I       : in  std_logic_vector(data_width_c-1 downto 0); -- mac result
+				MUL_RES_I       : in  std_logic_vector(2*data_width_c-1 downto 0); -- mul result
 				ADR_BASE_I      : in  std_logic_vector(data_width_c-1 downto 0); -- op_a bypass
 				DATA_BP_I       : in  std_logic_vector(data_width_c-1 downto 0); -- op_b bypass
 				CP_DATA_I       : in  std_logic_vector(data_width_c-1 downto 0); -- coprocessor rd data
@@ -453,12 +453,12 @@ package atlas_core_package is
 				MEM_DAT_O       : out std_logic_vector(data_width_c-1 downto 0); -- write data output
 				MEM_RW_O        : out std_logic  -- read write
 			);
-  end component;
+end component;
 
 
-  -- Component: Data Write Back Unit --------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
-  component WB_UNIT
+-- Component: Data Write Back Unit --------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
+component WB_UNIT
 	port	(
 				-- Global Control --
 				CLK_I           : in  std_logic; -- global clock line
@@ -477,12 +477,12 @@ package atlas_core_package is
 				WB_DATA_O       : out std_logic_vector(data_width_c-1 downto 0); -- write back data
 				WB_FWD_O        : out std_logic_vector(fwd_width_c-1  downto 0)  -- WB stage forwarding path
 			);
-  end component;
+end component;
 
 
-  -- Component: Control System --------------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
-  component CTRL
+-- Component: Control System --------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
+component CTRL
 	port	(
 				-- Global Control --
 				CLK_I           : in  std_logic; -- global clock line
@@ -503,7 +503,7 @@ package atlas_core_package is
 				WB_CTRL_BUS_O   : out std_logic_vector(ctrl_width_c-1 downto 0); -- wb stage control
 
 				-- Function Control --
-                COND_TRUE_I     : in  std_logic; -- condition is true
+				COND_TRUE_I     : in  std_logic; -- condition is true
 				VALID_BRANCH_I  : in  std_logic; -- valid branch detected
 				EXC_TAKEN_I     : in  std_logic; -- exception taken
 				WAKE_UP_I       : in  std_logic; -- wake up from sleep
@@ -511,12 +511,12 @@ package atlas_core_package is
 				STOP_PC_O       : out std_logic; -- freeze program counter
 				IR_UPDATE_EN_O  : out std_logic  -- enable instruction reg update
 			);
-  end component;
+end component;
 
 
-  -- Component: Opcode Decoder --------------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
-  component OP_DEC
+-- Component: Opcode Decoder --------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
+component OP_DEC
 	port	(
 				-- Decoder Interface Input --
 				INSTR_I         : in  std_logic_vector(data_width_c-1 downto 0); -- instruction input
@@ -531,12 +531,12 @@ package atlas_core_package is
 				CTRL_O          : out std_logic_vector(ctrl_width_c-1 downto 0); -- decoder ctrl lines
 				IMM_O           : out std_logic_vector(data_width_c-1 downto 0)  -- immediate
 			);
-  end component;
+end component;
 
 
-  -- Component: Atlas CPU Core --------------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
-  component ATLAS_CPU
+-- Component: Atlas CPU Core --------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
+component ATLAS_CPU
 	port	(
 				-- Global Control --
 				CLK_I           : in  std_logic; -- global clock line
@@ -572,12 +572,12 @@ package atlas_core_package is
 				EXT_INT_0_I     : in  std_logic; -- external interrupt request 0
 				EXT_INT_1_I     : in  std_logic  -- external interrupt request 1
 			);
-  end component;
+end component;
 
 
-  -- Component: System Controller Core 0 ----------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
-  component SYS_0_CORE
+-- Component: System Controller Core 0 ----------------------------------------------------
+-- -------------------------------------------------------------------------------------------
+component SYS_0_CORE
 	port	(
 				-- Host Interface --
 				CLK_I           : in  std_logic; -- global clock line
@@ -594,11 +594,11 @@ package atlas_core_package is
 				IRQ_I           : in  std_logic_vector(07 downto 0); -- irq input
 				IRQ_O           : out std_logic  -- interrupt request
 			);
-  end component;
+end component;
 
-  -- Component: System Controller Core 1 ----------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
-  component SYS_1_CORE
+-- Component: System Controller Core 1 ----------------------------------------------------
+-- -------------------------------------------------------------------------------------------
+component SYS_1_CORE
 	generic (
 				-- Clock Speed Configuration --
 				CLK_SPEED_G     : std_logic_vector(31 downto 0) := (others => '0') -- clock speed (in Hz)
@@ -620,11 +620,11 @@ package atlas_core_package is
 				MEM_IP_ADR_O    : out std_logic_vector(15 downto 0); -- instruction page
 				MEM_DP_ADR_O    : out std_logic_vector(15 downto 0)  -- data page
 			);
-  end component;
+end component;
 
-  -- Component: Communication Controller Core 0 ---------------------------------------------
-  -- -------------------------------------------------------------------------------------------
-  component COM_0_CORE
+-- Component: Communication Controller Core 0 ---------------------------------------------
+-- -------------------------------------------------------------------------------------------
+component COM_0_CORE
 	port	(
 				-- Host Interface --
 				CLK_I           : in  std_logic; -- global clock line
@@ -654,11 +654,11 @@ package atlas_core_package is
 				SYS_IO_I        : in  std_logic_vector(07 downto 0); -- system input
 				SYS_IO_O        : out std_logic_vector(07 downto 0)  -- system output
 			);
-  end component;
+end component;
 
-  -- Component: Communication Controller Core 1 ---------------------------------------------
-  -- -------------------------------------------------------------------------------------------
-  component COM_1_CORE
+-- Component: Communication Controller Core 1 ---------------------------------------------
+-- -------------------------------------------------------------------------------------------
+component COM_1_CORE
 	port	(
 				-- Host Interface --
 				CLK_I           : in  std_logic; -- global clock line
@@ -666,15 +666,15 @@ package atlas_core_package is
 				ICE_I           : in  std_logic; -- interface clock enable, high-active
 				W_EN_I          : in  std_logic; -- write enable
 				R_EN_I          : in  std_logic; -- read enable
-                CMD_EXE_I       : in  std_logic; -- execute command
+				CMD_EXE_I       : in  std_logic; -- execute command
 				ADR_I           : in  std_logic_vector(02 downto 0); -- access address/command
 				DAT_I           : in  std_logic_vector(15 downto 0); -- write data
 				DAT_O           : out std_logic_vector(15 downto 0); -- read data
-                IRQ_O           : out std_logic; -- interrupt request
+				IRQ_O           : out std_logic; -- interrupt request
 
-                -- Wishbone Bus --
-                WB_CLK_O        : out std_logic; -- bus clock
-                WB_RST_O        : out std_logic; -- bus reset, sync, high active
+				-- Wishbone Bus --
+				WB_CLK_O        : out std_logic; -- bus clock
+				WB_RST_O        : out std_logic; -- bus reset, sync, high active
 				WB_ADR_O        : out std_logic_vector(31 downto 0); -- address
 				WB_SEL_O        : out std_logic_vector(01 downto 0); -- byte select
 				WB_DATA_O       : out std_logic_vector(15 downto 0); -- data out
@@ -683,13 +683,13 @@ package atlas_core_package is
 				WB_CYC_O        : out std_logic; -- cycle enable
 				WB_STB_O        : out std_logic; -- strobe
 				WB_ACK_I        : in  std_logic; -- acknowledge
-                WB_ERR_I        : in  std_logic  -- bus error
+				WB_ERR_I        : in  std_logic  -- bus error
 			);
-  end component;
+end component;
 
-  -- Component: System Coprocessor ----------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
-  component SYSTEM_CP
+-- Component: System Coprocessor ----------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
+component SYSTEM_CP
 	generic	(
 				-- Configuration --
 				CLOCK_SPEED_G   : std_logic_vector(31 downto 0) -- clock speed in Hz
@@ -728,9 +728,9 @@ package atlas_core_package is
 				SYS_IN_I        : in  std_logic_vector(07 downto 0); -- system input
 				IRQ_I           : in  std_logic; -- IRQ
 
-                -- Wishbone Bus --
-                WB_CLK_O        : out std_logic; -- bus clock
-                WB_RST_O        : out std_logic; -- bus reset, sync, high active
+				-- Wishbone Bus --
+				WB_CLK_O        : out std_logic; -- bus clock
+				WB_RST_O        : out std_logic; -- bus reset, sync, high active
 				WB_ADR_O        : out std_logic_vector(31 downto 0); -- address
 				WB_SEL_O        : out std_logic_vector(01 downto 0); -- byte select
 				WB_DATA_O       : out std_logic_vector(15 downto 0); -- data out
@@ -739,13 +739,13 @@ package atlas_core_package is
 				WB_CYC_O        : out std_logic; -- cycle enable
 				WB_STB_O        : out std_logic; -- strobe
 				WB_ACK_I        : in  std_logic; -- acknowledge
-                WB_ERR_I        : in  std_logic  -- bus error
+				WB_ERR_I        : in  std_logic  -- bus error
 			);
-  end component;
+end component;
 
-  -- Component: Memory Gateway --------------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
-  component MEM_GATE
+-- Component: Memory Gateway --------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
+component MEM_GATE
 	port	(
 				-- Host Interface --
 				CLK_I           : in  std_logic; -- global clock line
@@ -784,11 +784,11 @@ package atlas_core_package is
 				MEM_D_DAT_O     : out std_logic_vector(15 downto 0); -- data in
 				MEM_D_DAT_I     : in  std_logic_vector(15 downto 0)  -- data out
 			);
-  end component;
+end component;
 
-  -- Component: Bootloader Memory -----------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
-  component BOOT_MEM
+-- Component: Bootloader Memory -----------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
+component BOOT_MEM
 	port	(
 				-- Host Interface --
 				CLK_I           : in  std_logic; -- global clock line
@@ -801,14 +801,14 @@ package atlas_core_package is
 				D_DAT_I         : in  std_logic_vector(15 downto 0); -- data in
 				D_DAT_O         : out std_logic_vector(15 downto 0)  -- data out
 			);
-  end component;
+end component;
 
 end atlas_core_package;
 
 package body atlas_core_package is
 
-  -- Function: Logarithm Base 2 -------------------------------------------------------------
-  -- -------------------------------------------------------------------------------------------
+-- Function: Logarithm Base 2 -------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------
 	function log2(temp : natural) return natural is
 		variable result : natural;
 	begin

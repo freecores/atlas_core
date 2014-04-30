@@ -4,7 +4,7 @@
 -- #  The main data processing is done here. Also the CP  #
 -- #  interface emerges from this unit.                   #
 -- # **************************************************** #
--- #  Last modified: 23.11.2013                           #
+-- #  Last modified: 30.04.2014                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -55,7 +55,7 @@ entity ALU is
 
 				MSR_DATA_O      : out std_logic_vector(data_width_c-1 downto 0); -- MSR write data
 				ALU_RES_O       : out std_logic_vector(data_width_c-1 downto 0); -- ALU result
-				MAC_RES_O       : out std_logic_vector(data_width_c-1 downto 0); -- MAC result
+				MUL_RES_O       : out std_logic_vector(2*data_width_c-1 downto 0); -- MUL result
 				BP_OPA_O        : out std_logic_vector(data_width_c-1 downto 0); -- operand A bypass
 				BP_OPC_O        : out std_logic_vector(data_width_c-1 downto 0); -- operand C bypass
 
@@ -99,7 +99,8 @@ architecture ALU_STRUCTURE of ALU is
 	signal EXTND_ZERO   : std_logic;
 
 	-- Multiplier --
-	signal MAC_BUF      : std_logic_vector(data_width_c-1 downto 0);
+	signal MUL_OP_A     : std_logic_vector(data_width_c-1 downto 0);
+	signal MUL_OP_B     : std_logic_vector(data_width_c-1 downto 0);
 
 begin
 
@@ -232,7 +233,7 @@ begin
 			op_b_v  := (others => '0');
 			cflag_v := '0';
 			if (EX_CTRL_BUS_I(ctrl_alu_fs_2_c downto ctrl_alu_fs_0_c) = alu_adc_c) or
-			   (EX_CTRL_BUS_I(ctrl_alu_fs_2_c downto ctrl_alu_fs_0_c) = alu_sbc_c) then
+			(EX_CTRL_BUS_I(ctrl_alu_fs_2_c downto ctrl_alu_fs_0_c) = alu_sbc_c) then
 				op_a_v  := OP_A_INT;
 				op_b_v  := OP_B_INT;
 				cflag_v := FLAG_BUS_I(flag_c_c);
@@ -274,7 +275,7 @@ begin
 
 			-- Arithmetic overflow flag --
 			FU_ARITH_FLG(1) <= ((not add_a_v(data_width_c-1)) and (not add_b_v(data_width_c-1)) and (    adder_tmp_v(data_width_c-1))) or
-			                   ((    add_a_v(data_width_c-1)) and (    add_b_v(data_width_c-1)) and (not adder_tmp_v(data_width_c-1)));
+							((    add_a_v(data_width_c-1)) and (    add_b_v(data_width_c-1)) and (not adder_tmp_v(data_width_c-1)));
 		end process FU_ARITHMETIC_CORE;
 
 
@@ -351,8 +352,8 @@ begin
 				when alu_eor_c  => FU_LOGIC_RES <= OP_A_INT xor OP_B_INT;
 				when alu_bic_c  => FU_LOGIC_RES <= OP_A_INT and (not OP_B_INT);
 				when others     => FU_LOGIC_RES    <= (others => '0');
-				                   FU_LOGIC_FLG(0) <= '0';
-				                   FU_LOGIC_FLG(1) <= '0';
+								FU_LOGIC_FLG(0) <= '0';
+								FU_LOGIC_FLG(1) <= '0';
 			end case;
 		end process FU_LOGIC_CORE;
 
@@ -409,59 +410,23 @@ begin
 
 
 
-	-- MAC Operand Buffer ----------------------------------------------------------------------------------
+	-- Mltiplier Kernel ------------------------------------------------------------------------------------
 	-- --------------------------------------------------------------------------------------------------------
-		MAC_BUFFER: process(CLK_I)
+		-- Operand gating --
+		MUL_OP_A <= OP_A_INT when ((build_mul_c = true) and (EX_CTRL_BUS_I(ctrl_use_mul_c) = '1')) else (others => '0');
+		MUL_OP_B <= OP_B_INT when ((build_mul_c = true) and (EX_CTRL_BUS_I(ctrl_use_mul_c) = '1')) else (others => '0');
+
+		-- Multiplier core --
+		MUL_BUFFER: process(CLK_I)
 		begin
 			if rising_edge(CLK_I) then
 				if (RST_I = '1') then
-					MAC_BUF <= (others => '0');
+					MUL_RES_O <= (others => '0');
 				elsif (CE_I = '1') then
-					if (EX_CTRL_BUS_I(ctrl_load_mac_c) = '1') and (EX_CTRL_BUS_I(ctrl_en_c) = '1') and (build_mac_c = true) then -- load mac buffer
-						MAC_BUF <= OP_C_I;
-					else
-						MAC_BUF <= (others => '0');
-					end if;
+					MUL_RES_O <= std_logic_vector(unsigned(MUL_OP_A) * unsigned(MUL_OP_B));
 				end if;
 			end if;
-		end process MAC_BUFFER;
-
-
-
-	-- MAC Kernel ------------------------------------------------------------------------------------------
-	-- --------------------------------------------------------------------------------------------------------
-		MULTIPLIER: process(EX_CTRL_BUS_I, OP_A_INT, OP_B_INT, MAC_BUF)
-			variable mul_op_a_v : std_logic_vector(data_width_c-1 downto 0);
-			variable mul_op_b_v : std_logic_vector(data_width_c-1 downto 0);
-			variable mul_res_v  : std_logic_vector(2*data_width_c-1 downto 0);
-			variable mac_ofs_v  : std_logic_vector(data_width_c-1 downto 0);
-		begin
-			-- Operand Gating --
-			mul_op_a_v := (others => '0');
-			mul_op_b_v := (others => '0');
-			if (build_mul_c = true) and (EX_CTRL_BUS_I(ctrl_use_mac_c) = '1') then
-				mul_op_a_v := OP_A_INT;
-				mul_op_b_v := OP_B_INT;
-			end if;
-
-			-- Multiplier Core --
-			mul_res_v := (others => '0');
-			if (build_mul_c = true) then
-				mul_res_v := std_logic_vector(unsigned(mul_op_a_v) * unsigned(mul_op_b_v));
-			end if;
-
-			-- Offset --
-			mac_ofs_v := (others => '0');
-			if (EX_CTRL_BUS_I(ctrl_use_offs_c) = '1') and (build_mac_c = true) then
-				mac_ofs_v := MAC_BUF;
-			end if;
-
-			-- Accumulate --
-			MAC_RES_O <= mul_res_v(data_width_c-1 downto 0);
-			if (build_mac_c = true) then
-				MAC_RES_O <= std_logic_vector(unsigned(mul_res_v(data_width_c-1 downto 0)) + unsigned(mac_ofs_v));
-			end if;
-		end process MULTIPLIER;
+		end process MUL_BUFFER;
 
 
 

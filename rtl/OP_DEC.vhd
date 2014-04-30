@@ -1,9 +1,9 @@
 -- ########################################################
 -- #         << ATLAS Project - OpCode Decoder >>         #
 -- # **************************************************** #
--- #  OpCode decoding unit.                               #
+-- #  OpCode (instruction) decoding unit.                 #
 -- # **************************************************** #
--- #  Last modified: 19.04.2014                           #
+-- #  Last modified: 30.04.2014                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -91,7 +91,7 @@ begin
 			CTRL_O(ctrl_rd_3_c   downto ctrl_rd_0_c)   <= M_FLAG_I & INSTR_INT(9 downto 7); -- destination register
 			CTRL_O(ctrl_cond_3_c downto ctrl_cond_0_c) <= INSTR_INT(13 downto 10);          -- branch condition
 
-			-- both operands have same addresses --
+			-- both operands have same addresses? --
 			redundant_reg_v := '0';
 			if (INSTR_INT(6 downto 4) = INSTR_INT(2 downto 0)) then
 				redundant_reg_v := '1';
@@ -430,25 +430,37 @@ begin
 						-- ==============================================================================
 							case (INSTR_INT(11 downto 10)) is
 
-								when "00" => -- Class 3c0: Multiply-and-Accumulate
+								when "00" => -- Class 3c0: Multiplication
 								-- --------------------------------------------------------------------------------
-									CTRL_O(ctrl_rd_wb_c) <= '1'; -- allow write back
-									if (INSTR_INT(3) = '1') then -- MAC
-										if (build_mac_c = true) then -- unit present?
-											if (MULTI_CYC_I = '0') then -- fist cycle: load MAC buffer
-												CTRL_O(ctrl_rb_3_c downto ctrl_rb_0_c) <= M_FLAG_I & INSTR_INT(9 downto 7); -- mac offset
-												CTRL_O(ctrl_load_mac_c) <= '1'; -- load mac buffer
-												MULTI_CYC_REQ_O         <= '1'; -- prepare second cycle
-											else -- second cycle: MUL operation with offset = MAC
-												CTRL_O(ctrl_use_offs_c) <= '1'; -- use loaded offset
-												CTRL_O(ctrl_use_mac_c)  <= '1'; -- use mac unit
-											end if;
+									if (INSTR_INT(3) = '1') then -- MUL32
+										if (build_mul_c = true) and (build_mul32_c = true) then -- unit present?
+											CTRL_O(ctrl_ext_mul_c) <= '1'; -- use high result
+											CTRL_O(ctrl_use_mul_c) <= '1'; -- use mul unit
+                                            CTRL_O(ctrl_rd_wb_c)   <= '1'; -- allow write back
 										else -- not present
 											CTRL_O(ctrl_cmd_err_c) <= '1'; -- invalid instruction - cmd_err trap
 										end if;
-									else -- MUL
+									else -- MUL16
 										if (build_mul_c = true) then -- unit present?
-											CTRL_O(ctrl_use_mac_c) <= '1'; -- use mac unit
+											CTRL_O(ctrl_use_mul_c) <= '1'; -- use mul unit
+                                            CTRL_O(ctrl_rd_wb_c)   <= '1'; -- allow write back
+										else -- not present
+											CTRL_O(ctrl_cmd_err_c) <= '1'; -- invalid instruction - cmd_err trap
+										end if;
+									end if;
+                                    
+									if (INSTR_INT(3) = '1') then -- MUL32
+										if (build_mul_c = true) and (build_mul32_c = true) then -- unit present?
+											CTRL_O(ctrl_ext_mul_c) <= '1'; -- use high result
+											CTRL_O(ctrl_use_mul_c) <= '1'; -- use mul unit
+                                            CTRL_O(ctrl_rd_wb_c)   <= '1'; -- allow write back
+										else -- not present
+											CTRL_O(ctrl_cmd_err_c) <= '1'; -- invalid instruction - cmd_err trap
+										end if;
+									else -- MUL16
+										if (build_mul_c = true) then -- unit present?
+											CTRL_O(ctrl_use_mul_c) <= '1'; -- use mul unit
+                                            CTRL_O(ctrl_rd_wb_c)   <= '1'; -- allow write back
 										else -- not present
 											CTRL_O(ctrl_cmd_err_c) <= '1'; -- invalid instruction - cmd_err trap
 										end if;

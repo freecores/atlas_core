@@ -95,7 +95,7 @@ architecture ATLAS_CPU_BEHAV of ATLAS_CPU is
 	signal BP_A_DATA     : std_logic_vector(data_width_c-1 downto 0); -- operand A bypass
 	signal BP_C_DATA     : std_logic_vector(data_width_c-1 downto 0); -- operand C bypass
 	signal ALU_RES       : std_logic_vector(data_width_c-1 downto 0); -- alu result
-	signal MAC_RES       : std_logic_vector(data_width_c-1 downto 0); -- mac result
+	signal MUL_RES       : std_logic_vector(2*data_width_c-1 downto 0); -- mul result
 	signal IMMEDIATE     : std_logic_vector(data_width_c-1 downto 0); -- immediate value
 	signal T_FLAG        : std_logic; -- transfer flag
 	signal MA_DATA       : std_logic_vector(data_width_c-1 downto 0); -- ma stage result
@@ -288,7 +288,7 @@ begin
 						MASK_T_FLAG_O   => T_FLAG,         -- T-Flag for mask generation
 						MSR_DATA_O      => MSR_W_DATA,     -- MSR write data
 						ALU_RES_O       => ALU_RES,        -- ALU result
-						MAC_RES_O       => MAC_RES,        -- MAC result
+						MUL_RES_O       => MUL_RES,        -- MUL result
 						BP_OPA_O        => BP_A_DATA,      -- operand A bypass
 						BP_OPC_O        => BP_C_DATA,      -- operand C bypass
 
@@ -320,7 +320,7 @@ begin
 
 						-- Data Input --
 						ALU_RES_I       => ALU_RES,        -- alu result
-						MAC_RES_I       => MAC_RES,        -- mac result
+						MUL_RES_I       => MUL_RES,        -- mul result
 						ADR_BASE_I      => BP_A_DATA,      -- op_a bypass
 						DATA_BP_I       => BP_C_DATA,      -- op_b bypass
 						CP_DATA_I       => CP_DAT_I,       -- coprocessor rd data
