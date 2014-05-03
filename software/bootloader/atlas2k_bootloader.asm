@@ -1351,7 +1351,7 @@ wb_dump_end:
 ; *****************************************************************************************************************
 ; ROM: Text strings
 ; *****************************************************************************************************************
-string_intro0:    .stringz "\n\nAtlas-2K Bootloader - V20140424\nby Stephan Nolting, stnolting@gmail.com\nwww.opencores.org/project,atlas_core\n"
+string_intro0:    .stringz "\n\nAtlas-2K Bootloader - V20140504\nby Stephan Nolting, stnolting@gmail.com\nwww.opencores.org/project,atlas_core\n"
 string_intro3:    .stringz "\nBoot page: 0x"
 string_intro4:    .stringz "\nClock(Hz): 0x"
 
@@ -1366,7 +1366,7 @@ string_ewbnum:    .stringz "#words (4h): $"
 string_checksum:  .stringz "Checksum: $"
 
 
-string_menu0:     .stringz "\ncmd/boot-switch:\n 0/'00': Restart console\n 1/'01': Boot UART\n 2/'10': Boot EEPROM\n 3/'11': Boot memory\n"
+string_menu0:     .stringz "\ncmd/boot-switch:\n 0/'00': (Re-)Start console\n 1/'01': Boot UART\n 2/'10': Boot EEPROM\n 3/'11': Boot memory\n"
 string_menup:     .stringz " 4: Boot WB\n p: Burn EEPROM\n d: RAM dump\n r: Reset\n w: WB dump\n"
 string_menux:     .stringz "cmd:> "
 

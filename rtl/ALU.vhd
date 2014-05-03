@@ -410,20 +410,24 @@ begin
 
 
 
-	-- Mltiplier Kernel ------------------------------------------------------------------------------------
+	-- Multiplier Kernel (signed) --------------------------------------------------------------------------
 	-- --------------------------------------------------------------------------------------------------------
 		-- Operand gating --
 		MUL_OP_A <= OP_A_INT when ((build_mul_c = true) and (EX_CTRL_BUS_I(ctrl_use_mul_c) = '1')) else (others => '0');
 		MUL_OP_B <= OP_B_INT when ((build_mul_c = true) and (EX_CTRL_BUS_I(ctrl_use_mul_c) = '1')) else (others => '0');
 
-		-- Multiplier core --
+		-- Multiplier core (SIGNED!) --
 		MUL_BUFFER: process(CLK_I)
 		begin
 			if rising_edge(CLK_I) then
 				if (RST_I = '1') then
 					MUL_RES_O <= (others => '0');
 				elsif (CE_I = '1') then
-					MUL_RES_O <= std_logic_vector(unsigned(MUL_OP_A) * unsigned(MUL_OP_B));
+					if (signed_mul_c = true) then
+						MUL_RES_O <= std_logic_vector(signed(MUL_OP_A) * signed(MUL_OP_B));
+					else
+						MUL_RES_O <= std_logic_vector(unsigned(MUL_OP_A) * unsigned(MUL_OP_B));
+					end if;
 				end if;
 			end if;
 		end process MUL_BUFFER;

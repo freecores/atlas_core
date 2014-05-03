@@ -4,7 +4,7 @@
 -- #  All architecture configurations, options, signal    #
 -- #  definitions and components are listed here.         #
 -- # **************************************************** #
--- #  Last modified: 29.04.2014                           #
+-- #  Last modified: 30.04.2014                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -21,6 +21,7 @@ package atlas_core_package is
 	constant build_mul_c       : boolean := true;  -- build a dedicated MUL unit
 	constant build_mul32_c     : boolean := true;  -- build 32-bit multiplier
 	constant word_mode_en_c    : boolean := false; -- use word-addressed memory system instead of byte-addressed
+	constant signed_mul_c      : boolean := true; -- synthesize signed or unsigned multiplier core
 	constant wb_fifo_size_c    : natural := 32; -- Wishbone fifo size in words (power of 2!)
 
 	---- DO NOT CHANGE ANYTHING BELOW UNLESS YOU REALLY KNOW WHAT YOU ARE DOING! ----
