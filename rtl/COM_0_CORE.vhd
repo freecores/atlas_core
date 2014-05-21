@@ -6,7 +6,7 @@
 -- #  -> Parallel IO  (16 in, 16 out)                      #
 -- #  -> System IO (8 in, 8 out)                           #
 -- # ***************************************************** #
--- #  Last modified: 12.04.2014                            #
+-- #  Last modified: 11.05.2014                            #
 -- # ***************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany            #
 -- #########################################################
@@ -144,6 +144,7 @@ architecture COM_0_CORE_BEHAV of COM_0_CORE is
 	signal PIO_IN_DATA              : std_logic_vector(15 downto 0);
 	signal PIO_SYNC                 : std_logic_vector(15 downto 0);
 	signal SYS_IO_I_FF              : std_logic_vector(07 downto 0);
+	signal SYS_IO_O_FF              : std_logic_vector(07 downto 0);
 
 begin
 
@@ -160,7 +161,7 @@ begin
 					PIO_IN_DATA    <= (others => '0');
 					PIO_OUT_DATA   <= (others => '0');
 					PIO_SYNC       <= (others => '0');
-					SYS_IO_O       <= (others => '0');
+					SYS_IO_O_FF    <= (others => '0');
 					SYS_IO_I_FF    <= (others => '0');
 				elsif (ICE_I = '1') then -- interface enable
 					if (W_EN_I = '1') then -- register update
@@ -170,7 +171,7 @@ begin
 							when spi_data_reg_c  => SPI_TX_REG     <= DAT_I;
 							when spi_cs_reg_c    => SPI_CS_REG     <= DAT_I(07 downto 00);
 							when pio_out_reg_c   => PIO_OUT_DATA   <= DAT_I;
-							when sys_io_reg_c    => SYS_IO_O       <= DAT_I(15 downto 08);
+							when sys_io_reg_c    => SYS_IO_O_FF    <= DAT_I(15 downto 08);
 							when others          => NULL;
 						end case;
 					end if;
@@ -181,8 +182,9 @@ begin
 			end if;
 		end process W_ACC;
 
-		-- PIO Output --
+		-- Output --
 		PIO_OUT_O <= PIO_OUT_DATA;
+		SYS_IO_O <= SYS_IO_O_FF;
 
 		-- PIO Input pin change IRQ --
 		PIO_IRQ_O <= '0' when (PIO_SYNC = PIO_IN_DATA) else '1';
@@ -191,7 +193,7 @@ begin
 
 	-- Read Access -----------------------------------------------------------------------------------------
 	-- --------------------------------------------------------------------------------------------------------
-		R_ACC: process(ADR_I, UART_TX_BSY_FLAG, UART_RX_READY, UART_RX_REG, UART_PRSC_REG, COM_CONFIG_REG,
+		R_ACC: process(ADR_I, UART_TX_BSY_FLAG, UART_RX_READY, UART_RX_REG, UART_PRSC_REG, COM_CONFIG_REG, SYS_IO_O_FF,
 		               SPI_BUSY_FLAG, SPI_CS_REG, SPI_RX_REG, PIO_OUT_DATA, PIO_IN_DATA, SYS_IO_I_FF, UART_DCOR_FLAG)
 		begin
 			case (ADR_I) is
@@ -207,7 +209,7 @@ begin
 				when spi_cs_reg_c      => DAT_O <= x"00" & SPI_CS_REG;
 				when pio_in_reg_c      => DAT_O <= PIO_IN_DATA;
 				when pio_out_reg_c     => DAT_O <= PIO_OUT_DATA;
-				when sys_io_reg_c      => DAT_O <= x"00" & SYS_IO_I_FF;
+				when sys_io_reg_c      => DAT_O <= SYS_IO_O_FF & SYS_IO_I_FF;
 				when others            => DAT_O <= x"0000";
 			end case;
 		end process R_ACC;

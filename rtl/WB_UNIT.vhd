@@ -3,7 +3,7 @@
 -- # **************************************************** #
 -- #  Data write back selector for register file input.   #
 -- # **************************************************** #
--- #  Last modified: 09.03.2013                           #
+-- #  Last modified: 08.05.2013                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -85,7 +85,7 @@ begin
 			variable dat_end_v : std_logic_vector(data_width_c-1 downto 0);
 		begin
 			-- Endianness converter --
-			if (big_endian_c = true) then
+			if (big_endian_c = false) then
 				dat_end_v := MEM_WB_DAT_I(data_width_c/2-1 downto 0) & MEM_WB_DAT_I(data_width_c-1 downto data_width_c/2);
 			else
 				dat_end_v := MEM_WB_DAT_I;

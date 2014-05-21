@@ -4,7 +4,7 @@
 -- #  All architecture configurations, options, signal    #
 -- #  definitions and components are listed here.         #
 -- # **************************************************** #
--- #  Last modified: 30.04.2014                           #
+-- #  Last modified: 08.05.2014                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -17,7 +17,7 @@ package atlas_core_package is
 
 -- Architecture Configuration for Application ---------------------------------------------
 -- -------------------------------------------------------------------------------------------
-	constant big_endian_c      : boolean := false; -- use little/big endian memory system
+	constant big_endian_c      : boolean := true; -- use little/big endian memory system
 	constant build_mul_c       : boolean := true;  -- build a dedicated MUL unit
 	constant build_mul32_c     : boolean := true;  -- build 32-bit multiplier
 	constant word_mode_en_c    : boolean := false; -- use word-addressed memory system instead of byte-addressed

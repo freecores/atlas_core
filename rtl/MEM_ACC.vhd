@@ -5,7 +5,7 @@
 -- #  data memory interface. Furthermore, internal data   #
 -- #  switching networks are located here.                #
 -- # **************************************************** #
--- #  Last modified: 29.04.2014                           #
+-- #  Last modified: 08.05.2014                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -137,7 +137,7 @@ begin
 			MEM_ADR_O    <= mem_adr_v; -- memory address output
 
 			-- Endianness converter --
-			if (big_endian_c = true) then
+			if (big_endian_c = false) then
 				dat_end_v := DATA_BP_INT(data_width_c/2-1 downto 0) & DATA_BP_INT(data_width_c-1 downto data_width_c/2);
 			else
 				dat_end_v := DATA_BP_INT;

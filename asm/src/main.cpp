@@ -887,7 +887,19 @@ int conv_imm(char *input, int max_val, int line){
 	if ((input_string[0] == '0') and (input_string[1] == 'X')){
       for(i=0; i<31; i++)
         input_string[i] = input_string[i+2];
-	  imm = 16*hexc_to_int(input_string[0]) + hexc_to_int(input_string[1]);
+      imm = -1;
+      if (input_string[1] == '\0'){ // one hex char
+	  	imm = 1*hexc_to_int(input_string[0]);
+      }
+      else if (input_string[2] == '\0'){ // two hex chars
+	  	imm = 16*hexc_to_int(input_string[0]) + 1*hexc_to_int(input_string[1]);
+      }
+      else if (input_string[3] == '\0'){ // three hex chars
+	  	imm = 256*hexc_to_int(input_string[0]) + 16*hexc_to_int(input_string[1]) + 1*hexc_to_int(input_string[2]);
+      }
+      else { // four hex chars
+	  	imm = 4096*hexc_to_int(input_string[0]) + 256*hexc_to_int(input_string[1]) + 16*hexc_to_int(input_string[2]) + 1*hexc_to_int(input_string[3]);
+      }
 	  goto skip_analysis;
 	}
 
@@ -1786,9 +1798,9 @@ int assemble(const char *input_file, const char *output_file, const char *bin_ou
       else if (strcmp(arg[0], "POP") == 0) // pop from negative growing stack
 	     opcode = (1<<14) | (0<<13) | (1<<12) | (1<<11) | (0<<10) | (conv_reg(arg[1], line)<<7) | (6<<4) | (1<<3) | (2<<0);
 
-	  // Direct memory initialization - WORD
+	  // Direct memory initialization
 	  // ---------------------------------------------------------------------------------------------------------
-      else if (strcmp(arg[0], ".DW") == 0) // memory init
+      else if (strcmp(arg[0], ".DW") == 0) // memory init (word)
 	     opcode = conv_imm(arg[1], (int)(pow(2,16)-1), line);
 
 	  // Conditional move instructions
@@ -1904,7 +1916,7 @@ int main(int argc, char *argv[]){
 	int p_size = 0;
 	int i = 0;
 
-    printf("ATLAS 2k Assembler, Version 2014.05.03\n");
+    printf("ATLAS 2k Assembler, Version 2014.05.11\n");
     printf("by Stephan Nolting (stnolting@gmail.com), Hanover, Germany\n");
     printf("www.opencores.org/project,atlas_core\n\n");
 

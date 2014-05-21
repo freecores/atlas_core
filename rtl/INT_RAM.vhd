@@ -3,7 +3,7 @@
 -- # **************************************************** #
 -- #  Core-compatible example RAM component.              #
 -- # **************************************************** #
--- #  Last modified: 02.03.2014                           #
+-- #  Last modified: 16.05.2014                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -55,12 +55,12 @@ architecture INT_RAM_STRUCTURE of INT_RAM is
 
 begin
 
-	-- Memory Access and Handshake -------------------------------------------------------------------------
+	-- Data Memory Access ----------------------------------------------------------------------------------
 	-- --------------------------------------------------------------------------------------------------------
-		MEM_FILE_ACCESS: process(CLK_I)
+		MEM_FILE_D_ACCESS: process(CLK_I)
 		begin
 			if rising_edge(CLK_I) then
-				-- Data Read(/Write) --
+				-- Data Read/Write --
 				if (D_EN_I = '1') then -- valid access
 					if (D_RW_I = '1') then -- write data access
 						if (word_mode_en_c = true) then
@@ -69,12 +69,21 @@ begin
 							MEM_FILE(to_integer(unsigned(D_ADR_I(log2_mem_size_c downto 1)))) <= D_DAT_I;
 						end if;
 					end if;
-					if (word_mode_en_c = true) then
-						D_DAT_O <= MEM_FILE(to_integer(unsigned(D_ADR_I(log2_mem_size_c-1 downto 0))));
-					else
-						D_DAT_O <= MEM_FILE(to_integer(unsigned(D_ADR_I(log2_mem_size_c downto 1))));
-					end if;
 				end if;
+				if (word_mode_en_c = true) then
+					D_DAT_O <= MEM_FILE(to_integer(unsigned(D_ADR_I(log2_mem_size_c-1 downto 0))));
+				else
+					D_DAT_O <= MEM_FILE(to_integer(unsigned(D_ADR_I(log2_mem_size_c downto 1))));
+				end if;
+			end if;
+		end process MEM_FILE_D_ACCESS;
+
+
+	-- Instruction Memory Access ---------------------------------------------------------------------------
+	-- --------------------------------------------------------------------------------------------------------
+		MEM_FILE_I_ACCESS: process(CLK_I)
+		begin
+			if rising_edge(CLK_I) then
 				-- Instruction Read --
 				if (I_EN_I = '1') then
 					if (word_mode_en_c = true) then
@@ -84,7 +93,7 @@ begin
 					end if;
 				end if;
 			end if;
-		end process MEM_FILE_ACCESS;
+		end process MEM_FILE_I_ACCESS;
 
 
 

@@ -11,7 +11,7 @@
 -- #  declared in this section (in Hz).                    #
 -- #                                                       #
 -- # ***************************************************** #
--- #  Last modified: 09.04.2014                            #
+-- #  Last modified: 16.05.2014                            #
 -- # ***************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany            #
 -- #########################################################
@@ -50,7 +50,7 @@ entity ATLAS_2K_BASE_TOP is
 				PIO_OUT_O       : out std_logic_vector(15 downto 0); -- parallel output
 				PIO_IN_I        : in  std_logic_vector(15 downto 0); -- parallel input
 
-				-- System IO --
+				-- System IO (bootloader, NOS, ...) --
 				SYS_OUT_O       : out std_logic_vector(07 downto 0); -- system output
 				SYS_IN_I        : in  std_logic_vector(07 downto 0); -- system input
 
@@ -149,7 +149,7 @@ architecture ATLAS_2K_BASE_TOP_STRUCTURE of ATLAS_2K_BASE_TOP is
 
 -- *** USER CONFIGURATION ***
 -- ***********************************************************************************************
-	constant clk_speed_c    : std_logic_vector(31 downto 0) := x"02FAF080"; -- clock speed in Hz
+	constant clk_speed_c    : std_logic_vector(31 downto 0) := x"02FAF080"; -- clock speed in Hz (here =50MHz)
 	constant num_pages_c    : natural := 4; -- number of pages (must be a power of 2)
 	constant page_size_c    : natural := 4096; -- page size in bytes (must be a power of 2)
 -- ***********************************************************************************************

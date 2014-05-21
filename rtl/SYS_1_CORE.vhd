@@ -4,7 +4,7 @@
 -- #  -> Memory Management Unit                            #
 -- #  -> Clock Information                                 #
 -- # ***************************************************** #
--- #  Last modified: 22.03.2014                            #
+-- #  Last modified: 07.05.2014                            #
 -- # ***************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany            #
 -- #########################################################
@@ -57,9 +57,12 @@ architecture SYS_1_CORE_BEHAV of SYS_1_CORE is
 	constant mmu_sys_d_page_c   : std_logic_vector(02 downto 0) := "010"; -- R/W: system mode D page
 	constant mmu_usr_i_page_c   : std_logic_vector(02 downto 0) := "011"; -- R/W: user mode I page
 	constant mmu_usr_d_page_c   : std_logic_vector(02 downto 0) := "100"; -- R/W: user mode D page
-	constant mmu_i_page_link_c  : std_logic_vector(02 downto 0) := "101"; -- R:   i page link
-	constant mmu_d_page_link_c  : std_logic_vector(02 downto 0) := "110"; -- R:   d page link
+	constant mmu_i_page_link_c  : std_logic_vector(02 downto 0) := "101"; -- R:   linked i page
+	constant mmu_d_page_link_c  : std_logic_vector(02 downto 0) := "110"; -- R:   linked d page
 	constant mmu_sys_info_c     : std_logic_vector(02 downto 0) := "111"; -- R:   system info
+	-- Sys info register (uses auto-pointer):
+	-- 1st read access: clock speed LOW
+	-- 2nd read access: clock speed HIGH
 
 	-- Registers --
 	signal MMU_IRQ_BASE         : std_logic_vector(15 downto 0);

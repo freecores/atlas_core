@@ -3,7 +3,7 @@
 -- # **************************************************** #
 -- #  OpCode (instruction) decoding unit.                 #
 -- # **************************************************** #
--- #  Last modified: 30.04.2014                           #
+-- #  Last modified: 08.05.2014                           #
 -- # **************************************************** #
 -- #  by Stephan Nolting 4788, Hanover, Germany           #
 -- ########################################################
@@ -64,7 +64,7 @@ begin
 					instr_tmp_v := instr_sel_v(31 downto 16);
 				end if;
 			end if;
-			if (big_endian_c = true) then -- endian converter
+			if (big_endian_c = false) then -- endian converter
 				INSTR_INT <= instr_tmp_v(7 downto 0) & instr_tmp_v(15 downto 8);
 			else
 				INSTR_INT <= instr_tmp_v;

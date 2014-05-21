@@ -112,14 +112,13 @@ uart_print:
 			mov   r4, lr
 			
 uart_print_loop:
-			ldr   r0, r2, +#1, post, !				; get one string byte
-			ldil  r1, #0x00							; upper byte mask
-			ldih  r1, #0xFF
-			and   r1, r0, r1
-			sfts  r1, r1, #swp						; swap bytes and test if zero
-			beq   uart_print_loop_end
-			bl    uart_sendbyte
-			b     uart_print_loop
+            ldr   r1, r2, +#1, post, !				; get one string byte
+			sft   r1, r1, #swp						; swap high and low byte
+            ldih  r1, #0x00							; clear high byte
+			teq   r1, r1							; test if string end
+            beq   uart_print_loop_end
+            bl    uart_sendbyte
+            b     uart_print_loop
 
 uart_print_loop_end:
 			mov   lr, r4
@@ -187,7 +186,7 @@ receive_hex_word_loop:
 			bl    uart_receivebyte					; get one char
 
 			; convert to higher case
-			ldil  r1, #'F'
+			ldil  r1, #'G'							; = 'F' +1
 			cmp   r0, r1
 			bmi   #+3								; skip decrement
 			ldil  r1, #32							; -> to lower case

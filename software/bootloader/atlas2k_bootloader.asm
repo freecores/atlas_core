@@ -448,10 +448,7 @@ boot_uart:	ldil  r2, low[string_boot_wimd]
             bl    uart_print_
 
             ; check signature (2 byte)
-            bl    uart_receivebyte_					; get high-byte
-            sft   r1, r0, #swp						; swap bytes
-            bl    uart_receivebyte_					; get low-byte
-            orr   r1, r1, r0						; construct word
+            bl    uart_get_word                     ; get a word from console
             ldil  r0, #0xFE
             ldih  r0, #0xCA
             cmp   r1, r0							; signature test
@@ -576,6 +573,7 @@ start_image:
             bl    uart_sendbyte
             bl    uart_linebreak
 
+start_image_no_text:
             ; print checksum
             ldil  r2, low[string_checksum]
             ldih  r2, high[string_checksum]
@@ -585,7 +583,6 @@ start_image:
             bl    uart_linebreak
 
             ; start the image
-start_image_no_text:
             bl    uart_linebreak
             bl    uart_linebreak
             bl    uart_linebreak
@@ -867,13 +864,12 @@ wb_read_word_:          b wb_read_word
 uart_print:
 ; --------------------------------------------------------------------------------------------------------
             mov   r3, lr
-            
+
 uart_print_loop:
-            ldr   r0, r2, +#1, post, !				; get one string byte
-            ldil  r1, #0x00							; upper byte mask
-            ldih  r1, #0xFF
-            and   r1, r0, r1
-            sfts  r1, r1, #swp						; swap bytes and test if zero
+            ldr   r1, r2, +#1, post, !				; get one string byte
+			sft   r1, r1, #swp						; swap high and low byte
+            ldih  r1, #0x00							; clear high byte
+			teq   r1, r1							; test if string end
             beq   uart_print_loop_end
             bl    uart_sendbyte
             b     uart_print_loop
@@ -941,7 +937,7 @@ receive_hex_word_loop:
             bl    uart_receivebyte					; get one char
 
             ; convert to higher case
-            ldil  r1, #'F'
+            ldil  r1, #'G'							; = 'F' +1
             cmp   r0, r1
             bmi   #+3								; skip decrement
             ldil  r1, #32							; -> to lower case
@@ -1351,13 +1347,13 @@ wb_dump_end:
 ; *****************************************************************************************************************
 ; ROM: Text strings
 ; *****************************************************************************************************************
-string_intro0:    .stringz "\n\nAtlas-2K Bootloader - V20140504\nby Stephan Nolting, stnolting@gmail.com\nwww.opencores.org/project,atlas_core\n"
+string_intro0:    .stringz "\n\nAtlas-2K Bootloader - V20140516\nby Stephan Nolting, stnolting@gmail.com\nwww.opencores.org/project,atlas_core\n"
 string_intro3:    .stringz "\nBoot page: 0x"
 string_intro4:    .stringz "\nClock(Hz): 0x"
 
 string_booting:   .stringz "Booting\n"
 string_prog_eep:  .stringz "Burn EEPROM\n"
-string_boot_wimd: .stringz "Awaiting data...\n"
+string_boot_wimd: .stringz "Awaiting image...\n"
 string_start_im:  .stringz "Starting image "
 string_done:      .stringz "Download complete\n"
 string_edpage:    .stringz "Page (4h): $"
